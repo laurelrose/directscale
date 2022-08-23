@@ -13,9 +13,14 @@ using System.Threading.Tasks;
 using WebExtension.Helper;
 using WebExtension.Helper.Interface;
 using WebExtension.Helper.Models;
+using WebExtension.Hooks;
+using WebExtension.Hooks.Associate;
+using WebExtension.Hooks.Autoship;
 using WebExtension.Hooks.Order;
 using WebExtension.Repositories;
 using WebExtension.Services;
+using WebExtension.Services.DailyRun;
+using WebExtension.Services.ZiplingoEngagementService;
 
 namespace WebExtension
 {
@@ -60,12 +65,17 @@ namespace WebExtension
             services.AddSingleton<ICustomLogRepository, CustomLogRepository>();
             services.AddSingleton<IAssociateWebRepository, AssociateWebRepository>();
             services.AddSingleton<IOrderWebRepository, OrderWebRepository>();
+            services.AddSingleton<IDailyRunRepository, DailyRunRepository>();
+            services.AddSingleton<IZiplingoEngagementRepository, ZiplingoEngagementRepository>();
 
             //Services
             services.AddSingleton<ICommonService, CommonService>();
             services.AddSingleton<ICustomLogService, CustomLogService>();
             services.AddSingleton<IAssociateWebService, AssociateWebService>();
             services.AddSingleton<IOrderWebService, OrderWebService>();
+            services.AddSingleton<IHttpClientService, HttpClientService>();
+            services.AddSingleton<IDailyRunService, DailyRunService>();
+            services.AddSingleton<IZiplingoEngagementService, ZiplingoEngagementService>();
 
             //DS
             services.AddDirectScale(c =>
@@ -75,6 +85,13 @@ namespace WebExtension
 
                 //Hooks
                 //c.AddHook<SubmitOrderHook>();
+                c.AddHook<UpdateAssociateHook>();
+                c.AddHook<FinalizeAcceptedOrderHook>();
+                c.AddHook<FinalizeNonAcceptedOrder>();
+                c.AddHook<LogRealtimeRankAdvanceHook>();
+                c.AddHook<MarkPackageShippedHook>();
+                c.AddHook<WriteApplication>();
+                c.AddHook<CreateAutoshipHook>();
 
                 //Event Handler
                 //options.AddEventHandler("CreateAssociateEvent", "/api/WebHook/CreateAssociateEvent");

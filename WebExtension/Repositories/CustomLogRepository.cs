@@ -8,6 +8,7 @@ namespace WebExtension.Repositories
 {
     public interface ICustomLogRepository
     {
+        void CustomErrorLog(int associateId, int orderId, string message, string error);
         Task SaveLog(int associateId, int orderId, string title, string message, string error, string url, string other, string request, string response);
     }
     public class CustomLogRepository : ICustomLogRepository
@@ -17,6 +18,22 @@ namespace WebExtension.Repositories
         public CustomLogRepository(IDataService dataService)
         {
             _dataService = dataService ?? throw new ArgumentNullException(nameof(dataService));
+        }
+
+        public void CustomErrorLog(int associateId, int orderId, string message, string error)
+        {
+            using (var dbConnection = new SqlConnection(_dataService.GetClientConnectionString().Result))
+            {
+                var parameters = new
+                {
+                    associateId,
+                    orderId,
+                    message,
+                    error
+                };
+                var insertStatement = @"INSERT INTO [Client].[CheckErrorLogResponse](AssociateID,OrderID,Message,Error,last_modified) VALUES(@associateId,@orderId,@message,@error,GETDATE())";
+                dbConnection.Execute(insertStatement, parameters);
+            }
         }
 
         public async Task SaveLog(int associateId, int orderId, string title, string message, string error, string url, string other, string request, string response)
