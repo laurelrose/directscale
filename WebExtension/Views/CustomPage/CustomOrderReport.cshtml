@@ -1,0 +1,122 @@
+﻿@{
+    ViewData["Title"] = "Custom Order Report";
+}
+
+<div class="container-fluid">
+
+    <div class="row">
+        <div class="col-sm-12 p-3">
+            <h1 class="modal-title">
+                Custom Order Report
+            </h1>
+        </div>
+
+        <div class="col-lg-12">
+
+            <div class="row">
+                <div class="col">
+                    <input type="date" id="begin" name="begin" class="form-control" value="" />
+                </div>
+
+                <div class="col">
+                    <input type="date" id="end" name="end" class="form-control" />
+                </div>
+
+                <div class="col-auto">
+                    <input type="search" id="search" name="search" class="form-control" placeholder=" Name or ID, Notes" />
+                </div>
+
+                <div class="col-sm-1">
+                    <input type="submit" value="Show" class="btn btn-primary" onclick="GetCustomOrderReport();" />
+                </div>
+
+                <div style="clear:both;"></div>
+            </div>
+        </div>
+
+        <div style="padding:15px"></div>
+
+        <div class="col-lg-12">
+            <div class="table-responsive">
+                <table class="table" id="orderreport">
+                    <thead>
+                        <tr>
+                            <th>Order Number</th>
+                            <th>Local Invoice</th>
+                            <th>Date</th>
+                            <th>Name</th>
+                            <th>Invoice Date</th>
+                            <th>SubTotal</th>
+                            <th>Total</th>
+                            <th>Status</th>
+                            <th>Country</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+@section Scripts{
+<script id="orderreport_CountryCode" type="text/x-jquery-tmpl">
+    ${CountryCode}
+</script>
+
+<script id="orderreport_Template" type="text/x-jquery-tmpl">
+    <tr>
+        <td><a target="_parent" href="@(ViewData[" DSBaseUrl"])Corporate /CRM/OrderDetail?order =${orderNumber}&id =${associateId}">${orderNumber}</a></td>
+        <td>${localInvoiceNumber}</td>
+        <td>${orderDate}</td>
+        <td><a target="_parent" href="@(ViewData[" DSBaseUrl"])Corporate /CRM/Detail?id =${associateId}">${name}</a></td>
+        <td>${invoiceDate}</td>
+        <td>${usdSubTotalFormatted}</td>
+        <td>${usdTotalFormatted}</td>
+        <td>${status}</td>
+        <td>
+            {{each(i, sub) packages}}
+            ${sub.countryCode}
+            {{tmpl(sub) "#orderreport_CountryCode"}}
+            {{/each}}
+        </td>
+    </tr>
+</script>
+
+<script>
+    $(document).ready(function () {
+        GetCustomOrderReport();
+    });
+
+    function GetCustomOrderReport() {
+        $("#orderreport tbody").html("");
+        var request = {
+            begin: $("#begin").val(),
+            end: $("#end").val(),
+            search: $("#search").val()
+        }
+
+        $.ajax({
+            type: "POST",
+            contentType: "application/json",
+            url: '/api/Order/GetCustomOrderReport',
+            data: JSON.stringify(request),
+            dataType: "json",
+            complete: function (resp) {
+                var output = resp.responseJSON;
+                if (output.status == 200) {
+                    $("#begin").val(new Date(output.data.begin).toLocaleDateString('fr-CA'));
+                    $("#end").val(new Date(output.data.end).toLocaleDateString('fr-CA'));
+                    $("#search").val(output.data.search);
+                    $("#orderreport_Template").tmpl(output.data.orders).appendTo("#orderreport tbody");
+                } else {
+                    alert(output.message);
+                }
+            }
+        });
+    }
+
+</script>
+}
