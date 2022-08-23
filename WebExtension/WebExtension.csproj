@@ -6,9 +6,10 @@
 
 	<ItemGroup>
 		<PackageReference Include="Swashbuckle.AspNetCore" Version="6.2.3" />
-		<PackageReference Include="DirectScale.Disco.Extension.Abstractions" Version="1.0.5091" />
+		<PackageReference Include="DirectScale.Disco.Extension.Abstractions" Version="1.0.5162" />
 		<PackageReference Include="Microsoft.VisualStudio.Web.CodeGeneration.Design" Version="5.0.2" />
 		<PackageReference Include="Dapper" Version="2.0.123" />
 		<PackageReference Include="System.Data.SqlClient" Version="4.8.3" />
+		<PackageReference Include="RestSharp" Version="106.6.10" />
 	</ItemGroup>
 </Project>
