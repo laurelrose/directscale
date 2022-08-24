@@ -33,6 +33,7 @@ namespace WebExtension.Hooks.Order
                     if (totalOrders.Length == 1)
                     {
                         _ziplingoEngagementService.CallOrderZiplingoEngagementTrigger(order, "FirstOrderCreated", false);
+                        _ziplingoEngagementService.CallOrderZiplingoEngagementTrigger(order, "OrderCreated", false);
                     }
                     else 
                     {
