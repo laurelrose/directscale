@@ -30,12 +30,9 @@ namespace WebExtension.Hooks.Associate
                 if (request.OldAssociateInfo.AssociateBaseType != request.UpdatedAssociateInfo.AssociateBaseType)
                 {
                     // Call AssociateTypeChange Trigger
-                    if (request.OldAssociateInfo.AssociateBaseType > 0 && request.UpdatedAssociateInfo.AssociateBaseType > 0)
-                    {
                         var OldAssociateType = await _associateService.GetAssociateTypeName(request.OldAssociateInfo.AssociateBaseType);
                         var UpdatedAssociateType = await _associateService.GetAssociateTypeName(request.UpdatedAssociateInfo.AssociateBaseType);
                         _ziplingoEngagementService.UpdateAssociateType(request.UpdatedAssociateInfo.AssociateId, OldAssociateType, UpdatedAssociateType, request.UpdatedAssociateInfo.AssociateBaseType);                        
-                    }
                 }
                 if (request.OldAssociateInfo.StatusId != request.UpdatedAssociateInfo.StatusId)
                 {
