@@ -20,6 +20,7 @@ namespace WebExtension.Services.ZiplingoEngagementService.Model
         public double Total { get; set; }
         public double Tax { get; set; }
         public double ShipCost { get; set; }
+        public double TotalRewardPoints { get; set; }
         public DateTime InvoiceDate { get; set; }
         public string Name { get; set; }
         public string Phone { get; set; }

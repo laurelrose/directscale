@@ -119,6 +119,7 @@ namespace WebExtension.Services.ZiplingoEngagementService
                         OrderDate = order.OrderDate,
                         OrderNumber = order.OrderNumber,
                         OrderType = order.OrderType,
+                        TotalRewardPoints = order.TotalRewardPoints, //Total Reward Points added
                         Tax = order.Totals.Select(m => m.Tax).FirstOrDefault(),
                         ShipCost = order.Totals.Select(m => m.Shipping).FirstOrDefault(),
                         Subtotal = order.Totals.Select(m => m.SubTotal).FirstOrDefault(),
@@ -696,7 +697,8 @@ namespace WebExtension.Services.ZiplingoEngagementService
                     EnrollerEmail = enrollerSummary.EmailAddress,
                     SponsorName = sponsorSummary.DisplayFirstName + ' ' + sponsorSummary.DisplayLastName,
                     SponsorMobile = sponsorSummary.PrimaryPhone,
-                    SponsorEmail = sponsorSummary.EmailAddress
+                    SponsorEmail = sponsorSummary.EmailAddress,
+                    TotalRewardPoints = 
                 };
 
                 var jsonZiplingoEngagementRequest = JsonConvert.SerializeObject(ZiplingoEngagementRequest);
