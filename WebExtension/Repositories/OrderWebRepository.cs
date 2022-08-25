@@ -11,6 +11,7 @@ namespace WebExtension.Repositories
     public interface IOrderWebRepository
     {
         List<int> GetFilteredOrderIds(string search, DateTime beginDate, DateTime endDate);
+        List<string> GetKitLevelFiveSkuList();
     }
     public class OrderWebRepository : IOrderWebRepository
     {
@@ -63,5 +64,21 @@ namespace WebExtension.Repositories
 
             return sql;
         }
+
+
+        public List<string> GetKitLevelFiveSkuList()
+        {
+            using (var dbConnection = new SqlConnection(_dataService.GetClientConnectionString().Result))
+            {
+                var parameters = new{};
+
+                var queryStatement = $@"
+                    SELECT SKU FROM [dbo].[INV_Inventory] WHERE KitLevel=5
+                ";
+
+                return dbConnection.Query<string>(queryStatement, parameters).ToList();
+            }
+        }
+        
     }
 }
