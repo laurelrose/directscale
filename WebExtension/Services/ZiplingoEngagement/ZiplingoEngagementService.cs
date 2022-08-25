@@ -697,8 +697,7 @@ namespace WebExtension.Services.ZiplingoEngagementService
                     EnrollerEmail = enrollerSummary.EmailAddress,
                     SponsorName = sponsorSummary.DisplayFirstName + ' ' + sponsorSummary.DisplayLastName,
                     SponsorMobile = sponsorSummary.PrimaryPhone,
-                    SponsorEmail = sponsorSummary.EmailAddress,
-                    TotalRewardPoints = 
+                    SponsorEmail = sponsorSummary.EmailAddress
                 };
 
                 var jsonZiplingoEngagementRequest = JsonConvert.SerializeObject(ZiplingoEngagementRequest);
