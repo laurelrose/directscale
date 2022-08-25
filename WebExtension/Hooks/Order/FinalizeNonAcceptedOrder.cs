@@ -24,6 +24,10 @@ namespace WebExtension.Hooks.Order
                 {
                     _ziplingoEngagementService.CallOrderZiplingoEngagementTrigger(request.Order, "AutoShipFailed", true);
                 }
+                else
+                {
+                    _ziplingoEngagementService.CallOrderZiplingoEngagementTrigger(request.Order, "OrderFailed", true);
+                }
             }
             catch (Exception ex)
             {
