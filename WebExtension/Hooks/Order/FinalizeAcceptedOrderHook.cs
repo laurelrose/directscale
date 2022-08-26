@@ -32,6 +32,10 @@ namespace WebExtension.Hooks.Order
             try
             {
                 DirectScale.Disco.Extension.Order order = await _orderService.GetOrderByOrderNumber(request.Order.OrderNumber);
+                if (order.OrderType == OrderType.Enrollment)
+                {
+                    _ziplingoEngagementService.CreateEnrollContact(order);
+                }
                 if (order.Status == OrderStatus.Paid || order.IsPaid)
                 {
                     var totalOrders = _orderService.GetOrdersByAssociateId(request.Order.AssociateId, "").Result;
