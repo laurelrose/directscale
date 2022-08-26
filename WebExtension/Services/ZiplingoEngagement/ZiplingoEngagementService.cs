@@ -599,6 +599,7 @@ namespace WebExtension.Services.ZiplingoEngagementService
                     zip = associateInfo.Result.Address.PostalCode,
                     UserName = UserName,
                     WebAlias = UserName,
+                    OrderDate = order.OrderDate,
                     CompanyUrl = company.Result.BackOfficeHomePageURL,
                     CompanyDomain = company.Result.BackOfficeHomePageURL,
                     LanguageCode = associateInfo.Result.LanguageCode,
