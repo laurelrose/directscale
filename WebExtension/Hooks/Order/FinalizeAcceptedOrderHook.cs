@@ -54,7 +54,7 @@ namespace WebExtension.Hooks.Order
                         _ziplingoEngagementService.CallOrderZiplingoEngagementTrigger(order, "OrderCreated", false);
                         //
                         #region #3159 Trigger for Reward Point Earned for Laurel Rose
-
+                        _ziplingoEngagementService.CallOrderZiplingoEngagementTrigger(order, "RewardPointEarned", false);
                         #endregion
                     }
                 }
