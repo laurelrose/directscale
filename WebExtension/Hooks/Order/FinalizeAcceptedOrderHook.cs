@@ -43,10 +43,19 @@ namespace WebExtension.Hooks.Order
                     {
                         _ziplingoEngagementService.CallOrderZiplingoEngagementTrigger(order, "FirstOrderCreated", false);
                         _ziplingoEngagementService.CallOrderZiplingoEngagementTrigger(order, "OrderCreated", false);
+                        
+                        //
+                        #region #3159 Trigger for Reward Point Earned for Laurel Rose
+                        _ziplingoEngagementService.CallOrderZiplingoEngagementTrigger(order, "RewardPointEarned", false);
+                        #endregion
                     }
                     else 
                     {
                         _ziplingoEngagementService.CallOrderZiplingoEngagementTrigger(order, "OrderCreated", false);
+                        //
+                        #region #3159 Trigger for Reward Point Earned for Laurel Rose
+
+                        #endregion
                     }
                 }
                 if (order.OrderType == OrderType.Autoship && (order.Status == OrderStatus.Declined || order.Status == OrderStatus.FraudRejected))
@@ -63,6 +72,7 @@ namespace WebExtension.Hooks.Order
                     _ziplingoEngagementService.CallOrderZiplingoEngagementTrigger(order, "InfinityBottlesEarned", true);
                 }
                 #endregion
+
             }
             catch (Exception ex)
             {
