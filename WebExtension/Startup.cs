@@ -92,6 +92,8 @@ namespace WebExtension
                 c.AddHook<MarkPackageShippedHook>();
                 c.AddHook<WriteApplication>();
                 c.AddHook<CreateAutoshipHook>();
+                c.AddHook<ProcessCouponCodesHook>();
+                c.AddHook<GetCouponAdjustedVolumeHook>();
 
                 //Event Handler
                 //options.AddEventHandler("CreateAssociateEvent", "/api/WebHook/CreateAssociateEvent");
