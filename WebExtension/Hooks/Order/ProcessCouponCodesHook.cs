@@ -39,12 +39,14 @@ namespace WebExtension.Hooks.Order
                 {
                     var adjustedSubtotal = (decimal)request.SubTotal - (decimal)response.OrderCoupons.DiscountTotal;
                     var usedCoupons = response.OrderCoupons.UsedCoupons?.ToList() ?? new List<OrderCoupon>();
-                    var pointsBalance =  Convert.ToDecimal(_rewardPointsService.GetRewardPoints(associateInfo.Result.AssociateId));
-                    var pointsToUse = (double)Math.Round(adjustedSubtotal > pointsBalance ? pointsBalance : adjustedSubtotal, 2);
+                    var pointsBalance =  _rewardPointsService.GetRewardPoints(associateInfo.Result.AssociateId);
+                    var point = (double)Math.Round(pointsBalance.Result, 2);
+                    var adjusted = (double)Math.Round(adjustedSubtotal, 2);
+                    var pointsToUse = (double)Math.Round(adjusted > point ? point : adjusted, 2);
 
                     usedCoupons.Add(new OrderCoupon(new Coupon
                     {
-                        Code = ShareAndSave,
+                        Code = ShareAndSave,    
                         CouponId = ShareAndSaveCouponId,
                         Discount = pointsToUse
 
