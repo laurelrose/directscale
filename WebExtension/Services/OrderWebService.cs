@@ -28,11 +28,13 @@ namespace WebExtension.Services
         private readonly IAssociateService _associateService;
         private readonly IRewardPointsService _rewardPointsService;
         private readonly ITicketService _ticketService;
+        private readonly ICustomLogRepository _customLogRepository;
 
         public OrderWebService(IOrderWebRepository orderWebRepository,
             IOrderService orderService, ICurrencyService currencyService, IStatsService statsService, IAssociateService associateService,
             IRewardPointsService rewardPointsService,
-            ITicketService ticketService)
+            ITicketService ticketService,
+            ICustomLogRepository customLogRepository)
         {
             _orderWebRepository = orderWebRepository ?? throw new ArgumentNullException(nameof(orderWebRepository));
             _orderService = orderService ?? throw new ArgumentNullException(nameof(orderService));
@@ -41,6 +43,7 @@ namespace WebExtension.Services
             _associateService = associateService ?? throw new ArgumentNullException(nameof(associateService));
             _rewardPointsService = rewardPointsService ?? throw new ArgumentNullException(nameof(rewardPointsService));
             _ticketService = ticketService ?? throw new ArgumentNullException(nameof(ticketService));
+            _customLogRepository = customLogRepository ?? throw new ArgumentNullException(nameof(customLogRepository));
         }
 
         public async Task<List<OrderViewModel>> GetFilteredOrders(string search, DateTime beginDate, DateTime endDate)
@@ -133,6 +136,7 @@ namespace WebExtension.Services
             }
             catch (Exception ex)
             {
+                _customLogRepository.CustomErrorLog(order.AssociateId, order.OrderNumber, "Error in ConsumeUsedPoints", "Error : " + ex.Message);
                 throw new Exception(ex.Message);
             }
         }
@@ -157,7 +161,8 @@ namespace WebExtension.Services
 
                 if (sponsorInfo.Result.AssociateBaseType==2)
                 {
-                    var pointsBalance = Convert.ToDecimal(_rewardPointsService.GetRewardPoints(sponsorId));
+                    var pointsBalance = _rewardPointsService.GetRewardPoints(sponsorId);
+                      var point = (decimal)Math.Round(pointsBalance.Result, 2);
 
                     var pointsToAward = (decimal)Math.Round((order.Totals.FirstOrDefault().SubTotal - order.Totals.FirstOrDefault().DiscountTotal) * .25, 2);
 
@@ -174,15 +179,16 @@ namespace WebExtension.Services
                         order.OrderNumber);
 
                     _ticketService.LogEvent(sponsorId,
-                        $"Current RWD account balance {pointsBalance} RWD, " +
+                        $"Current RWD account balance {point} RWD, " +
                         $"Order {order.OrderNumber} from {associateInfo.Result.Name} earned {pointsToAward} RWD. " +
-                        $"New RWD account balance {pointsBalance + pointsToAward} RWD. " +
+                        $"New RWD account balance {point + pointsToAward} RWD. " +
                         $"This distribution will expire in {PointExpirationDays} days.","","");
 
                 }
             }
             catch (Exception ex)
             {
+                _customLogRepository.CustomErrorLog(order.AssociateId, order.OrderNumber, "Error in DistributeShareAndSaveRewards", "Error : " + ex.Message);
                 throw new Exception(ex.Message);
             }
         }

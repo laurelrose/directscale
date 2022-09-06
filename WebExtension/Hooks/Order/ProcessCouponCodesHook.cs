@@ -7,6 +7,7 @@ using System.Threading.Tasks;
 using DirectScale.Disco.Extension;
 using DirectScale.Disco.Extension.Services;
 using Microsoft.Extensions.Logging;
+using WebExtension.Repositories;
 
 namespace WebExtension.Hooks.Order
 {
@@ -17,12 +18,14 @@ namespace WebExtension.Hooks.Order
         private readonly IAssociateService _associateService;
         private readonly IRewardPointsService _rewardPointsService;
         private readonly ILogger<ProcessCouponCodesHook> _logger;
+        private readonly ICustomLogRepository _customLogRepository;
         public ProcessCouponCodesHook(IAssociateService associateService,
-            IRewardPointsService rewardPointsService, ILogger<ProcessCouponCodesHook> loggingService)
+            IRewardPointsService rewardPointsService, ILogger<ProcessCouponCodesHook> loggingService, ICustomLogRepository customLogRepository)
         {
             _associateService = associateService ?? throw new ArgumentNullException(nameof(associateService));
             _rewardPointsService = rewardPointsService ?? throw new ArgumentNullException(nameof(rewardPointsService));
             _logger = loggingService ?? throw new ArgumentNullException(nameof(loggingService));
+            _customLogRepository = customLogRepository ?? throw new ArgumentNullException(nameof(customLogRepository));
         }
         public async Task<ProcessCouponCodesHookResponse> Invoke(ProcessCouponCodesHookRequest request, Func<ProcessCouponCodesHookRequest, Task<ProcessCouponCodesHookResponse>> func)
         {
@@ -60,6 +63,7 @@ namespace WebExtension.Hooks.Order
             }
             catch (Exception ex)
             {
+                _customLogRepository.CustomErrorLog(request.AssociateId, 0, "Error in ProcessCouponCodesHook.ApplyShareAndSave", "Error : " + ex.Message);
                 _logger.LogInformation($"ProcessCouponCodesHook.ApplyShareAndSave {request?.AssociateId} {request?.SubTotal} {ex.Message}");
                 throw new Exception(ex.Message);
             }

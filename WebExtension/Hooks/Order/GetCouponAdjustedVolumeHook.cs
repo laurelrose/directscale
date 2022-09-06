@@ -4,15 +4,18 @@ using System.Linq;
 using System;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
+using WebExtension.Repositories;
 
 namespace WebExtension.Hooks.Order
 {
     public class GetCouponAdjustedVolumeHook : IHook<GetCouponAdjustedVolumeHookRequest, GetCouponAdjustedVolumeHookResponse>
     {
         private readonly ILogger<GetCouponAdjustedVolumeHook> _logger;
-        public GetCouponAdjustedVolumeHook(ILogger<GetCouponAdjustedVolumeHook> loggingService)
+        private readonly ICustomLogRepository _customLogRepository;
+        public GetCouponAdjustedVolumeHook(ILogger<GetCouponAdjustedVolumeHook> loggingService, ICustomLogRepository customLogRepository)
         {
             _logger = loggingService ?? throw new ArgumentNullException(nameof(loggingService));
+            _customLogRepository = customLogRepository ?? throw new ArgumentNullException(nameof(customLogRepository));
         }
         public async Task<GetCouponAdjustedVolumeHookResponse> Invoke(GetCouponAdjustedVolumeHookRequest request, Func<GetCouponAdjustedVolumeHookRequest, Task<GetCouponAdjustedVolumeHookResponse>> func)
         {
@@ -36,6 +39,7 @@ namespace WebExtension.Hooks.Order
             }
             catch (Exception e)
             {
+                _customLogRepository.CustomErrorLog(request.Totals[0].OrderNumber, 0, "Error in GetCouponAdjustedVolumeHookResponse", "Error : " + e.Message);
                 _logger.LogInformation($"Error adjust volume AutoshipCoupon orderNumber: {request?.Totals[0]?.OrderNumber} {e.Message}");
             }
             return result;
