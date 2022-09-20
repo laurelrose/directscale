@@ -442,12 +442,15 @@ namespace WebExtension.Services.ZiplingoEngagementService
                     {
                         sponsorSummary = enrollerSummary;
                     }
+                    var associateSummary = await _distributorService.GetAssociate(assoRankAdvancementInfo.AssociateId);
                     AssociateRankAdvancement data = new AssociateRankAdvancement
                     {
                         Rank = assoRankAdvancementInfo.Rank,
                         AssociateId = assoRankAdvancementInfo.AssociateId,
                         FirstName = assoRankAdvancementInfo.FirstName,
                         LastName = assoRankAdvancementInfo.LastName,
+                        PrimaryPhone = associateSummary.PrimaryPhone,
+                        EmailAddress = associateSummary.EmailAddress,
                         CompanyDomain = company.Result.BackOfficeHomePageURL,
                         LogoUrl = settings.LogoUrl,
                         CompanyName = settings.CompanyName,

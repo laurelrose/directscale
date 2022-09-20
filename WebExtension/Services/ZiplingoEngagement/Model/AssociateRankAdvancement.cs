@@ -8,6 +8,8 @@ namespace WebExtension.Services.ZiplingoEngagement.Model
         public string RankName { get; set; }
         public string FirstName { get; set; }
         public string LastName { get; set; }
+        public string PrimaryPhone { get; set; }
+        public string EmailAddress { get; set; }
         public int SponsorId { get; set; }
         public int EnrollerId { get; set; }
         public string LogoUrl { get; set; }
