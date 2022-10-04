@@ -196,6 +196,7 @@ namespace WebExtension.Services.ZiplingoEngagementService
                     var CardLastFourDegit = _ZiplingoEngagementRepository.GetLastFoutDegitByOrderNumber(order.Order.OrderNumber);
                     OrderData data = new OrderData
                     {
+                        ShipMethodId = order.ShipMethodId, //ShipMethodId added
                         AssociateId = order.Order.AssociateId,
                         BackofficeId = order.Order.BackofficeId,
                         Email = order.Order.Email,

@@ -9,6 +9,7 @@ namespace WebExtension.Services.ZiplingoEngagementService.Model
 {
     public class OrderData
     {
+        public int ShipMethodId { get; set; }
         public bool IsPaid { get; set; }
         public string BackofficeId { get; set; }
         public int SponsorId { get; set; }
