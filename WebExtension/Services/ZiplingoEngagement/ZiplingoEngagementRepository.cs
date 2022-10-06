@@ -125,10 +125,10 @@ namespace WebExtension.Services.ZiplingoEngagementService
                     var settings = GetSettings();
                     var parameters = new
                     {
-                        Username = "AviniHealthAPI",
-                        Password = "4f9e667d-1c9b-4664-89d0-fb73d47b8ae6",
+                        Username = "LaurelRoseAPI",
+                        Password = "1264a6ec-fa9b-4c0a-9d2e-778b4fd4f82e",
                         ApiUrl = "http://unifiedbetaapi.ziplingo.com/api/",
-                        LogoUrl = "https://az708237.vo.msecnd.net/WebExtension/images/376843ac-31be-42e7-9f7e-a072056b572e",
+                        LogoUrl = "https://laurelrose.corpadmin.directscale.com/CMS/Images/Logo-Default-230px.png",
                         settings.CompanyName
                     };
 
