@@ -586,6 +586,7 @@ namespace WebExtension.Services.ZiplingoEngagementService
                 {
                     sponsorSummary = enrollerSummary;
                 }
+                var associateOrders = await _orderService.GetOrdersByAssociateId(order.AssociateId, "");
                 var ZiplingoEngagementRequest = new AssociateContactModel
                 {
                     AssociateId = associateInfo.Result.AssociateId,
@@ -618,7 +619,9 @@ namespace WebExtension.Services.ZiplingoEngagementService
                     EnrollerEmail = enrollerSummary.EmailAddress,
                     SponsorName = sponsorSummary.DisplayFirstName + ' ' + sponsorSummary.DisplayLastName,
                     SponsorMobile = sponsorSummary.PrimaryPhone,
-                    SponsorEmail = sponsorSummary.EmailAddress
+                    SponsorEmail = sponsorSummary.EmailAddress,
+                    JoinDate = associateInfo.Result.SignupDate.ToUniversalTime(),
+                    ActiveAutoship = associateOrders.Where(o => o.OrderType == OrderType.Autoship).Any()
                 };
 
                 var jsonZiplingoEngagementRequest = JsonConvert.SerializeObject(ZiplingoEngagementRequest);
@@ -671,6 +674,7 @@ namespace WebExtension.Services.ZiplingoEngagementService
                 {
                     sponsorSummary = enrollerSummary;
                 }
+                var associateSummary = await _distributorService.GetAssociate(req.AssociateId);
                 var ZiplingoEngagementRequest = new AssociateContactModel
                 {
                     AssociateId = req.AssociateId,
@@ -703,7 +707,9 @@ namespace WebExtension.Services.ZiplingoEngagementService
                     EnrollerEmail = enrollerSummary.EmailAddress,
                     SponsorName = sponsorSummary.DisplayFirstName + ' ' + sponsorSummary.DisplayLastName,
                     SponsorMobile = sponsorSummary.PrimaryPhone,
-                    SponsorEmail = sponsorSummary.EmailAddress
+                    SponsorEmail = sponsorSummary.EmailAddress,
+                    JoinDate = associateSummary.SignupDate.ToUniversalTime(),
+                    ActiveAutoship = false
                 };
 
                 var jsonZiplingoEngagementRequest = JsonConvert.SerializeObject(ZiplingoEngagementRequest);
@@ -760,6 +766,7 @@ namespace WebExtension.Services.ZiplingoEngagementService
                 {
                     sponsorSummary = enrollerSummary;
                 }
+                var associateOrders = await _orderService.GetOrdersByAssociateId(req.AssociateId, "");
                 var ZiplingoEngagementRequest = new AssociateContactModel
                 {
                     AssociateId = AssociateInfo.Result.AssociateId,
@@ -792,7 +799,9 @@ namespace WebExtension.Services.ZiplingoEngagementService
                     EnrollerEmail = enrollerSummary.EmailAddress,
                     SponsorName = sponsorSummary.DisplayFirstName + ' ' + sponsorSummary.DisplayLastName,
                     SponsorMobile = sponsorSummary.PrimaryPhone,
-                    SponsorEmail = sponsorSummary.EmailAddress
+                    SponsorEmail = sponsorSummary.EmailAddress,
+                    JoinDate = AssociateInfo.Result.SignupDate.ToUniversalTime(),
+                    ActiveAutoship = associateOrders.Where(o => o.OrderType == OrderType.Autoship).Any()
                 };
 
                 var jsonReq = JsonConvert.SerializeObject(ZiplingoEngagementRequest);

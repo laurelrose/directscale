@@ -45,5 +45,7 @@ namespace WebExtension.Services.ZiplingoEngagementService.Model
 
         //OrderDate added
         public DateTime? OrderDate { get; set; }
+        public DateTime JoinDate { get; set; }
+        public bool ActiveAutoship { get; set; }
     }
 }
