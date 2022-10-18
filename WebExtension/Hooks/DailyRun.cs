@@ -33,6 +33,7 @@ namespace WebExtension.Hooks
                 _dailyRunService.FiveDayRun();
                 _dailyRunService.SentNotificationOnCardExpiryBefore30Days();
                 _dailyRunService.ExecuteCommissionEarned();
+                _dailyRunService.GetAssociateStatuses(); //New sync api for associate statuses
                 _ziplingoEngagementService.SentNotificationOnServiceExpiryBefore2Weeks();
             }
             catch (Exception ex)

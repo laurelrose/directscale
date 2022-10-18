@@ -12,6 +12,7 @@ using RestSharp.Authenticators;
 using System.Net;
 using System.Net.Security;
 using WebExtension.Repositories;
+using WebExtension.Services.DailyRun.Models;
 
 namespace WebExtension.Services.ZiplingoEngagementService
 {
@@ -34,6 +35,7 @@ namespace WebExtension.Services.ZiplingoEngagementService
         void ExecuteCommissionEarned();
         void SentNotificationOnServiceExpiryBefore2Weeks();
         void CreateAutoshipTrigger(Autoship autoshipInfo);
+        void AssociateStatusSync(List<GetAssociateStatusModel> associateStatuses);
     }
     public class ZiplingoEngagementService : IZiplingoEngagementService
     {
@@ -1239,6 +1241,32 @@ namespace WebExtension.Services.ZiplingoEngagementService
             {
                 _customLogRepository.CustomErrorLog(0, 0, "Exception occured in attempting CreateAutoshipTrigger", e.Message);
             }
+        }
+
+        public void AssociateStatusSync(List<GetAssociateStatusModel> associateStatuses)
+        {
+            try
+            {
+                if (associateStatuses.Count != 0)
+                {
+                    foreach (var item in associateStatuses)
+                    {
+                        var associateSummary = _distributorService.GetAssociate(item.AssociateID).Result;
+                        associateSummary.StatusId = item.CurrentStatusId;
+                        UpdateContact(associateSummary);
+                    }
+                }
+                else
+                {
+                    _customLogRepository.CustomErrorLog(0, 0, "No Data Found for associate status change", "");
+                }
+
+            }
+            catch (Exception ex)
+            {
+                _customLogRepository.CustomErrorLog(0, 0, "Error while calling sync call for associate statuses", ex.Message);
+            }
+
         }
     }
 }

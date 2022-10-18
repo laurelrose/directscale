@@ -10,6 +10,7 @@ namespace WebExtension.Services.DailyRun
         void FiveDayRun();
         void SentNotificationOnCardExpiryBefore30Days();
         void ExecuteCommissionEarned();
+        void GetAssociateStatuses();
     }
 
     public class DailyRunService : IDailyRunService
@@ -46,6 +47,12 @@ namespace WebExtension.Services.DailyRun
         public void ExecuteCommissionEarned()
         {
             _ziplingoEngagementService.ExecuteCommissionEarned();
+        }
+
+        public void GetAssociateStatuses()
+        {
+            var associateStatuses = _dailyRunRepository.GetAssociateStatuses();
+            _ziplingoEngagementService.AssociateStatusSync(associateStatuses);
         }
     }
 }
