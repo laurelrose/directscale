@@ -4,6 +4,7 @@ using System;
 using System.Collections.Generic;
 using System.Data.SqlClient;
 using System.Linq;
+using WebExtension.Services.DailyRun.Models;
 using WebExtension.Services.ZiplingoEngagement.Model;
 
 namespace WebExtension.Services.DailyRun
@@ -12,6 +13,7 @@ namespace WebExtension.Services.DailyRun
     {
         List<AutoshipInfo> GetNextFiveDayAutoships();
         List<CardInfo> GetCreditCardInfoBefore30Days();
+        List<GetAssociateStatusModel> GetAssociateStatuses();
     }
     public class DailyRunRepository : IDailyRunRepository
     {
@@ -48,6 +50,30 @@ namespace WebExtension.Services.DailyRun
                     WHERE p.Input2 IS NOT NULL AND p.InputDate IS NOT NULL AND CAST(InputDate as date) = CAST(@Before30DaysFromCurrentDate as date)";
                 var info = dbConnection.Query<CardInfo>(sql, parameters).ToList();
                 return info.ToList();
+            }
+        }
+
+        public List<GetAssociateStatusModel> GetAssociateStatuses()
+        {
+            using (var dbConnection = new SqlConnection(_dataService.GetConnectionString().Result))
+            {
+
+                var sql = @"select st.recordnumber, st.last_modified, st.Subject, st.AssociateID, 
+                            TRIM(REPLACE(st.Subject, 'Associate Status Updated to ', ' ')) as CurrentStatusName,
+                            s.recordnumber as CurrentStatusId
+                            from CRM_SupportTickets st
+                            left join CRM_AssociateStatuses s
+                            on TRIM(REPLACE(st.Subject, 'Associate Status Updated to ', ' '))  = s.StatusName
+                            where CAST(st.last_modified as Date) = CAST(GETDATE() - 1 as Date) and st.Subject like 'Associate Status Updated%'
+                            and st.last_modified
+                            in
+                            (
+                                select max(last_modified) from CRM_SupportTickets 
+                                group by AssociateID
+                            )
+                            order by st.last_modified desc";
+                var info = dbConnection.Query<GetAssociateStatusModel>(sql).ToList();
+                return info;
             }
         }
     }
