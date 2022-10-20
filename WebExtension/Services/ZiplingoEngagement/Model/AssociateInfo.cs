@@ -1,8 +1,10 @@
-﻿using System;
+﻿using DirectScale.Disco.Extension;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using WebExtension.Services.ZiplingoEngagementService.Model;
 
 namespace WebExtension.Services.ZiplingoEngagement.Model
 {
@@ -27,5 +29,7 @@ namespace WebExtension.Services.ZiplingoEngagement.Model
         public string SponsorMobile { get; set; }
         public string SponsorEmail { get; set; }
         public bool CommissionActive { get; set; }
+        public CommissionPayment CommissionDetails { get; set; }
+        public FivedayAutoshipModel FivedayAutoshipDetails { get; set; }
     }
 }
