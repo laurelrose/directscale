@@ -58,20 +58,17 @@ namespace WebExtension.Services.DailyRun
             using (var dbConnection = new SqlConnection(_dataService.GetConnectionString().Result))
             {
 
-                var sql = @"select st.recordnumber, st.last_modified, st.Subject, st.AssociateID, 
-                            TRIM(REPLACE(st.Subject, 'Associate Status Updated to ', ' ')) as CurrentStatusName,
-                            s.recordnumber as CurrentStatusId
-                            from CRM_SupportTickets st
-                            left join CRM_AssociateStatuses s
-                            on TRIM(REPLACE(st.Subject, 'Associate Status Updated to ', ' '))  = s.StatusName
-                            where CAST(st.last_modified as Date) = CAST(GETDATE() - 1 as Date) and st.Subject like 'Associate Status Updated%'
-                            and st.last_modified
-                            in
-                            (
-                                select max(last_modified) from CRM_SupportTickets 
-                                group by AssociateID
-                            )
-                            order by st.last_modified desc";
+                var sql = @";with cte as (select AssociateID, max(last_modified) as last_modified
+                            from CRM_SupportTickets
+                            group by AssociateID)
+
+                            select cte.AssociateID, cte.last_modified, d.StatusID as CurrentStatusId, s.StatusName
+                            from cte
+                            join CRM_Distributors d
+                            on d.recordnumber = cte.AssociateID
+                            join CRM_AssociateStatuses s
+                            on s.recordnumber = d.StatusID
+                            where CAST(cte.last_modified as Date) = CAST(GETDATE() - 1 as Date)";
                 var info = dbConnection.Query<GetAssociateStatusModel>(sql).ToList();
                 return info;
             }
