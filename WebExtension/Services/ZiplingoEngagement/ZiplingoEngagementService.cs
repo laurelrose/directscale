@@ -1044,15 +1044,17 @@ namespace WebExtension.Services.ZiplingoEngagementService
             }
         }
 
-        public void FiveDayRunTrigger(List<AutoshipInfo> autoships)
+        public async void FiveDayRunTrigger(List<AutoshipInfo> autoships)
         {
             try
             {
-                var company = _companyService.GetCompany();
+                var company = await _companyService.GetCompany();
                 var settings = _ZiplingoEngagementRepository.GetSettings();
-                foreach (AutoshipInfo autoship in autoships)
+                for (int i = 0; i < autoships.Count; i = i + 100)
                 {
-                    try
+                    List<FivedayAutoshipModel> autoshipList = new List<FivedayAutoshipModel>();
+                    var items = autoships.Skip(i).Take(100);
+                    foreach (var autoship in items)
                     {
                         FivedayAutoshipModel autoObj = new FivedayAutoshipModel();
                         autoObj.AssociateId = autoship.AssociateId;
@@ -1068,28 +1070,96 @@ namespace WebExtension.Services.ZiplingoEngagementService
                         autoObj.SponsorEmail = autoship.SponsorEmail;
                         autoObj.SponsorMobile = autoship.SponsorMobile;
                         autoObj.OrderNumber = autoship.OrderNumber;
-                        autoObj.CompanyDomain = company.Result.BackOfficeHomePageURL;
+                        autoObj.CompanyDomain = company.BackOfficeHomePageURL;
                         autoObj.LogoUrl = settings.LogoUrl;
                         autoObj.CompanyName = settings.CompanyName;
-                        if (autoObj.OrderNumber > 0)
-                        {
-
-                        }
-                        var strData = JsonConvert.SerializeObject(autoObj);
-                        ZiplingoEngagementRequest request = new ZiplingoEngagementRequest { associateid = autoship.AssociateId, companyname = settings.CompanyName, eventKey = "FiveDayAutoship", data = strData };
-                        var jsonReq = JsonConvert.SerializeObject(request);
-                        CallZiplingoEngagementApi(jsonReq, "Campaign/ExecuteTrigger");
+                        autoshipList.Add(autoObj);
                     }
-                    catch (Exception ex)
-                    {
-                        _customLogRepository.CustomErrorLog(0, 0, "Error with in FiveDayAutoship", ex.Message);
-                    }
+                    CallFiveDayRunTrigger(autoshipList);
                 }
 
             }
             catch (Exception e)
             {
                 _customLogRepository.CustomErrorLog(0, 0, "Error with in FiveDayAutoship", e.Message);
+            }
+        }
+
+        public async void CallFiveDayRunTrigger(List<FivedayAutoshipModel> autoshipList)
+        {
+            try
+            {
+                var settings = _ZiplingoEngagementRepository.GetSettings();
+                var company = await _companyService.GetCompany();
+                List<AssociateDetail> objautoshipListDetail = new List<AssociateDetail>();
+                foreach (var autoship in autoshipList)
+                {
+                    AssociateDetail associateDetail = new AssociateDetail();
+                    int enrollerID = 0;
+                    int sponsorID = 0;
+                    if (_treeService.GetNodeDetail(new NodeId(autoship.AssociateId, 0), TreeType.Enrollment).Result.UplineId != null)
+                    {
+                        enrollerID = _treeService.GetNodeDetail(new NodeId(autoship.AssociateId, 0), TreeType.Enrollment).Result?.UplineId.AssociateId ?? 0;
+                    }
+                    if (_treeService.GetNodeDetail(new NodeId(autoship.AssociateId, 0), TreeType.Unilevel).Result.UplineId != null)
+                    {
+                        sponsorID = _treeService.GetNodeDetail(new NodeId(autoship.AssociateId, 0), TreeType.Unilevel).Result?.UplineId.AssociateId ?? 0;
+                    }
+
+                    Associate sponsorSummary = new Associate();
+                    Associate enrollerSummary = new Associate();
+                    if (enrollerID <= 0)
+                    {
+                        enrollerSummary = new Associate();
+                    }
+                    else
+                    {
+                        enrollerSummary = await _distributorService.GetAssociate(enrollerID);
+                    }
+                    if (sponsorID > 0)
+                    {
+                        sponsorSummary = await _distributorService.GetAssociate(sponsorID);
+                    }
+                    else
+                    {
+                        sponsorSummary = enrollerSummary;
+                    }
+                    var associateSummary = await _distributorService.GetAssociate(autoship.AssociateId);
+                    AssociateInfo data = new AssociateInfo
+                    {
+                        AssociateId = autoship.AssociateId,
+                        EmailAddress = associateSummary.EmailAddress,
+                        Birthdate = associateSummary.BirthDate.ToShortDateString(),
+                        FirstName = associateSummary.LegalFirstName,
+                        LastName = associateSummary.LegalLastName,
+                        CompanyDomain = company.BackOfficeHomePageURL,
+                        LogoUrl = settings.LogoUrl,
+                        CompanyName = settings.CompanyName,
+                        EnrollerId = enrollerSummary.AssociateId,
+                        SponsorId = sponsorSummary.AssociateId,
+                        CommissionActive = true,
+                        FivedayAutoshipDetails = autoship,
+                        EnrollerName = enrollerSummary.DisplayFirstName + ' ' + enrollerSummary.DisplayLastName,
+                        EnrollerMobile = enrollerSummary.PrimaryPhone,
+                        EnrollerEmail = enrollerSummary.EmailAddress,
+                        SponsorName = sponsorSummary.DisplayLastName + ' ' + sponsorSummary.DisplayLastName,
+                        SponsorMobile = sponsorSummary.PrimaryPhone,
+                        SponsorEmail = sponsorSummary.EmailAddress
+                    };
+                    associateDetail.associateId = autoship.AssociateId;
+                    associateDetail.data = JsonConvert.SerializeObject(data);
+                    objautoshipListDetail.Add(associateDetail);
+                }
+
+                var strData = objautoshipListDetail;
+                ZiplingoEngagementListRequest request = new ZiplingoEngagementListRequest { companyname = settings.CompanyName, eventKey = "FiveDayAutoship", dataList = strData };
+                var jsonReq = JsonConvert.SerializeObject(request);
+                CallZiplingoEngagementApi(jsonReq, "Campaign/ExecuteTriggersList");
+            }
+
+            catch (Exception e)
+            {
+                //_logger.LogError($"5DayTrigger", $"Exception occurred attempting to 5DayTrigger", e);
             }
         }
 
@@ -1139,24 +1209,120 @@ namespace WebExtension.Services.ZiplingoEngagementService
             {
                 var settings = _ZiplingoEngagementRepository.GetSettings();
 
-                var payments = await _paymentProcessingService.FindPaidPayments(DateTime.Now.Date.AddDays(-1), DateTime.Now.Date, "");
+                var paymentData = await _paymentProcessingService.FindPaidPayments(DateTime.Now.Date.AddDays(-1), DateTime.Now.Date, "");
 
-                foreach (var payment in payments)
+                for (int i = 0; i < paymentData.Length; i = i + 100)
                 {
-                    var jsonZiplingoEngagementRequest = JsonConvert.SerializeObject(payment);
-
-                    ZiplingoEngagementRequest request = new ZiplingoEngagementRequest();
-
-                    request = new ZiplingoEngagementRequest { associateid = payment.AssociateId, companyname = settings.CompanyName, eventKey = "CommissionEarned", data = jsonZiplingoEngagementRequest };
-
-                    var jsonReq = JsonConvert.SerializeObject(request);
-
-                    CallZiplingoEngagementApi(jsonReq, "Campaign/ExecuteTrigger");
+                    List<CommissionPayment> paymentDataList = new List<CommissionPayment>();
+                    var items = paymentData.Skip(i).Take(100);
+                    foreach (var data in items)
+                    {
+                        CommissionPayment pyModel = new CommissionPayment();
+                        pyModel.BatchId = data.BatchId;
+                        pyModel.Details = data.Details;
+                        pyModel.MerchantId = data.MerchantId;
+                        pyModel.PaymentUniqueId = data.PaymentUniqueId;
+                        pyModel.CountryCode = data.CountryCode;
+                        pyModel.TaxId = data.TaxId;
+                        pyModel.Amount = data.Amount;
+                        pyModel.Fees = data.Fees;
+                        pyModel.Holdings = data.Holdings;
+                        pyModel.Total = data.Total;
+                        pyModel.ExchangeRate = data.ExchangeRate;
+                        pyModel.ExchangeCurrencyCode = data.ExchangeCurrencyCode;
+                        pyModel.PaymentStatus = data.PaymentStatus;
+                        pyModel.DatePaid = data.DatePaid;
+                        pyModel.TransactionNumber = data.TransactionNumber;
+                        pyModel.CheckNumber = data.CheckNumber;
+                        pyModel.ErrorMessage = data.ErrorMessage;
+                        pyModel.MerchantCustomFields = data.MerchantCustomFields;
+                        pyModel.AssociateId = data.AssociateId;
+                        paymentDataList.Add(pyModel);
+                    }
+                    CallExecuteCommissionEarnedTrigger(paymentDataList);
                 }
             }
             catch (Exception e)
             {
                 _customLogRepository.CustomErrorLog(0, 0, "Error with in ExecuteCommissionEarned", e.Message);
+            }
+        }
+
+        public async void CallExecuteCommissionEarnedTrigger(List<CommissionPayment> payments)
+        {
+            try
+            {
+                var settings = _ZiplingoEngagementRepository.GetSettings();
+                var company = await _companyService.GetCompany();
+
+                List<AssociateDetail> objpayListDetail = new List<AssociateDetail>();
+                foreach (var payment in payments)
+                {
+                    AssociateDetail associateDetail = new AssociateDetail();
+                    int enrollerID = 0;
+                    int sponsorID = 0;
+                    if (_treeService.GetNodeDetail(new NodeId(payment.AssociateId, 0), TreeType.Enrollment).Result.UplineId != null)
+                    {
+                        enrollerID = _treeService.GetNodeDetail(new NodeId(payment.AssociateId, 0), TreeType.Enrollment).Result?.UplineId.AssociateId ?? 0;
+                    }
+                    if (_treeService.GetNodeDetail(new NodeId(payment.AssociateId, 0), TreeType.Unilevel).Result.UplineId != null)
+                    {
+                        sponsorID = _treeService.GetNodeDetail(new NodeId(payment.AssociateId, 0), TreeType.Unilevel).Result?.UplineId.AssociateId ?? 0;
+                    }
+
+                    Associate sponsorSummary = new Associate();
+                    Associate enrollerSummary = new Associate();
+                    if (enrollerID <= 0)
+                    {
+                        enrollerSummary = new Associate();
+                    }
+                    else
+                    {
+                        enrollerSummary = _distributorService.GetAssociate(enrollerID).Result;
+                    }
+                    if (sponsorID > 0)
+                    {
+                        sponsorSummary = _distributorService.GetAssociate(sponsorID).Result;
+                    }
+                    else
+                    {
+                        sponsorSummary = enrollerSummary;
+                    }
+                    var associateSummary = await _distributorService.GetAssociate(payment.AssociateId);
+                    AssociateInfo data = new AssociateInfo
+                    {
+                        AssociateId = payment.AssociateId,
+                        EmailAddress = associateSummary.EmailAddress,
+                        Birthdate = associateSummary.BirthDate.ToShortDateString(),
+                        FirstName = associateSummary.LegalFirstName,
+                        LastName = associateSummary.LegalLastName,
+                        CompanyDomain = company.BackOfficeHomePageURL,
+                        LogoUrl = settings.LogoUrl,
+                        CompanyName = settings.CompanyName,
+                        EnrollerId = enrollerSummary.AssociateId,
+                        SponsorId = sponsorSummary.AssociateId,
+                        CommissionActive = true,
+                        CommissionDetails = payment,
+                        EnrollerName = enrollerSummary.DisplayFirstName + ' ' + enrollerSummary.DisplayLastName,
+                        EnrollerMobile = enrollerSummary.PrimaryPhone,
+                        EnrollerEmail = enrollerSummary.EmailAddress,
+                        SponsorName = sponsorSummary.DisplayFirstName + ' ' + sponsorSummary.DisplayFirstName,
+                        SponsorMobile = sponsorSummary.PrimaryPhone,
+                        SponsorEmail = sponsorSummary.EmailAddress
+                    };
+                    associateDetail.associateId = payment.AssociateId;
+                    associateDetail.data = JsonConvert.SerializeObject(data);
+                    objpayListDetail.Add(associateDetail);
+                }
+
+                var strData = objpayListDetail;
+                ZiplingoEngagementListRequest request = new ZiplingoEngagementListRequest { companyname = settings.CompanyName, eventKey = "CommissionEarned", dataList = strData };
+                var jsonReq = JsonConvert.SerializeObject(request);
+                CallZiplingoEngagementApi(jsonReq, "Campaign/ExecuteTriggersList");
+            }
+            catch (Exception e)
+            {
+                //_logger.LogError(e, "Exception occurred in ExecuteCommissionEarned ", JsonConvert.SerializeObject(e.Message));
             }
         }
 
