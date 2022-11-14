@@ -1289,7 +1289,7 @@ namespace WebExtension.Services.ZiplingoEngagementService
                         sponsorSummary = enrollerSummary;
                     }
                     var associateSummary = await _distributorService.GetAssociate(payment.AssociateId);
-                    AssociateInfo data = new AssociateInfo
+                    AssociateInfoCommissionEarned data = new AssociateInfoCommissionEarned
                     {
                         AssociateId = payment.AssociateId,
                         EmailAddress = associateSummary.EmailAddress,
@@ -1302,7 +1302,9 @@ namespace WebExtension.Services.ZiplingoEngagementService
                         EnrollerId = enrollerSummary.AssociateId,
                         SponsorId = sponsorSummary.AssociateId,
                         CommissionActive = true,
-                        CommissionDetails = payment,
+                        MerchantCustomFields = payment.MerchantCustomFields,
+                        CommissionDetails = MapCommissionPayment(payment),
+                        CommissionPaymentDetails = payment.Details,
                         EnrollerName = enrollerSummary.DisplayFirstName + ' ' + enrollerSummary.DisplayLastName,
                         EnrollerMobile = enrollerSummary.PrimaryPhone,
                         EnrollerEmail = enrollerSummary.EmailAddress,
@@ -1324,6 +1326,36 @@ namespace WebExtension.Services.ZiplingoEngagementService
             {
                 //_logger.LogError(e, "Exception occurred in ExecuteCommissionEarned ", JsonConvert.SerializeObject(e.Message));
             }
+        }
+
+        public CommissionPaymentModel MapCommissionPayment(CommissionPayment commission)
+        {
+            if (commission != null)
+            {
+                return new CommissionPaymentModel
+                {
+                    Id = commission.Id,
+                    Amount = commission.Amount,
+                    AssociateId = commission.AssociateId,
+                    BatchId = commission.BatchId,
+                    CheckNumber = commission.CheckNumber,
+                    CountryCode = commission.CountryCode,
+                    DatePaid = commission.DatePaid,
+                    ErrorMessage = commission.ErrorMessage,
+                    ExchangeCurrencyCode = commission.ExchangeCurrencyCode,
+                    ExchangeRate = commission.ExchangeRate,
+                    Fees = commission.Fees,
+                    Holdings = commission.Holdings,
+                    MerchantId = commission.MerchantId,
+                    PaymentStatus = commission.PaymentStatus,
+                    PaymentUniqueId = commission.PaymentUniqueId,
+                    TaxId = commission.TaxId,
+                    Total = commission.Total,
+                    TransactionNumber = commission.TransactionNumber
+                };
+            }
+
+            return null;
         }
 
         public void SentNotificationOnServiceExpiryBefore2Weeks()

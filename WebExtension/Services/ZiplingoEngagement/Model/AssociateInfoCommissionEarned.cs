@@ -1,14 +1,9 @@
 ﻿using DirectScale.Disco.Extension;
-using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using WebExtension.Services.ZiplingoEngagementService.Model;
 
 namespace WebExtension.Services.ZiplingoEngagement.Model
 {
-    public class AssociateInfo
+    public class AssociateInfoCommissionEarned
     {
         public int AssociateId { get; set; }
         public string FirstName { get; set; }
@@ -29,6 +24,21 @@ namespace WebExtension.Services.ZiplingoEngagement.Model
         public string SponsorMobile { get; set; }
         public string SponsorEmail { get; set; }
         public bool CommissionActive { get; set; }
-        public FivedayAutoshipModel FivedayAutoshipDetails { get; set; }
+        public Dictionary<string, string> MerchantCustomFields { get; set; }
+        public CommissionPaymentModel CommissionDetails { get; set; }
+        public List<CommissionPaymentDetail> CommissionPaymentDetails { get; set; }
+        public string CommissionNotes
+        {
+            get
+            {
+                string result = null;
+                if ((CommissionDetails != null) & (CommissionPaymentDetails.Count > 0))
+                {
+                    result = ((CommissionPaymentDetails.Count != 1) ? $"Multiple Payables ({CommissionPaymentDetails.Count})" : CommissionPaymentDetails[0].Notes);
+                }
+
+                return result;
+            }
+        }
     }
 }
