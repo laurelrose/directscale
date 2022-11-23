@@ -1,14 +1,10 @@
 using DirectScale.Disco.Extension.Middleware;
-using DirectScale.Disco.Extension.Middleware.Models;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
-using Microsoft.AspNetCore.HttpsPolicy;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
-using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Threading.Tasks;
 using WebExtension.Helper;
 using WebExtension.Helper.Interface;
@@ -20,6 +16,8 @@ using WebExtension.Hooks.Order;
 using WebExtension.Repositories;
 using WebExtension.Services;
 using WebExtension.Services.DailyRun;
+using WebExtension.Services.RewardPoints;
+using WebExtension.Services.TableCreation;
 using WebExtension.Services.ZiplingoEngagementService;
 
 namespace WebExtension
@@ -67,6 +65,8 @@ namespace WebExtension
             services.AddSingleton<IOrderWebRepository, OrderWebRepository>();
             services.AddSingleton<IDailyRunRepository, DailyRunRepository>();
             services.AddSingleton<IZiplingoEngagementRepository, ZiplingoEngagementRepository>();
+            services.AddSingleton<ITableCreationRepository, TableCreationRepository>();
+            services.AddSingleton<IRewardPointRepository, RewardPointRepository>();
 
             //Services
             services.AddSingleton<ICommonService, CommonService>();
@@ -76,6 +76,8 @@ namespace WebExtension
             services.AddSingleton<IHttpClientService, HttpClientService>();
             services.AddSingleton<IDailyRunService, DailyRunService>();
             services.AddSingleton<IZiplingoEngagementService, ZiplingoEngagementService>();
+            services.AddSingleton<ITableCreationService, TableCreationService>();
+            services.AddSingleton<IRewardPointService, RewardPointService>();
 
             //DS
             services.AddDirectScale(c =>
