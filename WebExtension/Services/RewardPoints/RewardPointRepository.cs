@@ -12,8 +12,9 @@ namespace WebExtension.Services.RewardPoints
 {
     public interface IRewardPointRepository
     {
-        Task<HashSet<int>> GetFirstTimeItemPurchases(int associateId, IEnumerable<int> itemIds);
-        Task<int> GetFirstTimeOrderPurchaseCount(int associateId);
+        Task<HashSet<int>> GetFirstTimeItemPurchases(int orderAssociateId, IEnumerable<int> itemIds);
+        int GetFirstTimeOrderPurchaseCount(int orderAssociateId);
+        Task<int> GetRepAssociateId(int orderAssociateId);
         Task SaveRewardPointCredit(RewardPointCredit rewardPointCredit);
         Task SaveRewardPointCredits(List<RewardPointCredit> rewardPointCredits);
         Task<Dictionary<int, List<RewardPointCredit>>> GetRewardPointCreditsByAwardedAssociateId(DateTimeOffset beginDate, DateTimeOffset endDate);
@@ -28,7 +29,7 @@ namespace WebExtension.Services.RewardPoints
             _dataService = dataService ?? throw new ArgumentException(nameof(dataService));
         }
 
-        public async Task<HashSet<int>> GetFirstTimeItemPurchases(int associateId, IEnumerable<int> itemIds)
+        public async Task<HashSet<int>> GetFirstTimeItemPurchases(int orderAssociateId, IEnumerable<int> itemIds)
         {
             const string sql =
 @"SELECT [OrderItemId]
@@ -41,7 +42,7 @@ HAVING COUNT([OrderItemId]) > 0;";
 
             var parameters = new
             {
-                AssocaiteId = associateId,
+                AssocaiteId = orderAssociateId,
                 CreditType = (int)RewardPointCreditType.FirstTimeItemPurchase,
                 OrderItemIds = itemIds
             };
@@ -51,7 +52,7 @@ HAVING COUNT([OrderItemId]) > 0;";
             return new HashSet<int>(result);
         }
 
-        public async Task<int> GetFirstTimeOrderPurchaseCount(int associateId)
+        public int GetFirstTimeOrderPurchaseCount(int orderAssociateId)
         {
             const string sql =
 @"SELECT COUNT(O.[recordnumber])
@@ -59,8 +60,20 @@ FROM [dbo].[ORD_Order] O
 LEFT JOIN [dbo].[ORD_CustomFields] C ON C.[OrderNumber] = O.[recordnumber] AND C.[Field1] <> 'TRUE'
 WHERE O.[DistributorID] = @AssociateId;";
 
+            using var dbConnection = new SqlConnection(_dataService.GetClientConnectionString().Result);
+            return dbConnection.QueryFirstOrDefault<int>(sql, new { AssociateId = orderAssociateId });
+        }
+
+        public async Task<int> GetRepAssociateId(int orderAssociateId)
+        {
+            const string sql =
+@"SELECT TOP 1 E.[AssociateID]
+FROM RPT_GetEnrollmentUpline(@AssociateId) E
+JOIN CRM_Distributors D ON E.[AssociateID] = D.[recordnumber]
+WHERE D.[AssociateType] = 1;";
+
             await using var dbConnection = new SqlConnection(await _dataService.GetClientConnectionString());
-            return await dbConnection.QueryFirstOrDefaultAsync<int>(sql, new { AssociateId = associateId });
+            return await dbConnection.QueryFirstOrDefaultAsync<int>(sql, new { AssociateId = orderAssociateId });
         }
 
         public async Task SaveRewardPointCredit(RewardPointCredit rewardPointCredit)
