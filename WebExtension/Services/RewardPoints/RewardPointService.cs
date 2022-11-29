@@ -41,7 +41,7 @@ namespace WebExtension.Services.RewardPoints
         {
             try
             {
-
+                var rewardPointCreditsMap = _rewardPointRepository.GetRewardPointCreditsByAwardedAssociateIdAsync();
             }
             catch (Exception e)
             {
