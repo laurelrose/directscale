@@ -12,12 +12,14 @@ namespace WebExtension.Services.RewardPoints
 {
     public interface IRewardPointRepository
     {
-        Task<HashSet<int>> GetFirstTimeItemPurchases(int orderAssociateId, IEnumerable<int> itemIds);
+        Dictionary<int, double> GetFirstTimeItemDiscounts(HashSet<int> itemIds);
+        Dictionary<int, double> GetFirstTimeOrderCredits(HashSet<int> itemIds);
+        HashSet<int> GetFirstTimeItemPurchases(int orderAssociateId, HashSet<int> itemIds);
         int GetFirstTimeOrderPurchaseCount(int orderAssociateId);
-        Task<int> GetRepAssociateId(int orderAssociateId);
-        Task SaveRewardPointCredit(RewardPointCredit rewardPointCredit);
-        Task SaveRewardPointCredits(List<RewardPointCredit> rewardPointCredits);
-        Task<Dictionary<int, List<RewardPointCredit>>> GetRewardPointCreditsByAwardedAssociateId(DateTimeOffset beginDate, DateTimeOffset endDate);
+        Task<int> GetRepAssociateIdAsync(int orderAssociateId);
+        Task SaveRewardPointCreditAsync(RewardPointCredit rewardPointCredit);
+        Task SaveRewardPointCreditsAsync(List<RewardPointCredit> rewardPointCredits);
+        Task<Dictionary<int, List<RewardPointCredit>>> GetRewardPointCreditsByAwardedAssociateIdAsync(DateTimeOffset beginDate, DateTimeOffset endDate);
     }
 
     internal class RewardPointRepository : IRewardPointRepository
@@ -29,14 +31,52 @@ namespace WebExtension.Services.RewardPoints
             _dataService = dataService ?? throw new ArgumentException(nameof(dataService));
         }
 
-        public async Task<HashSet<int>> GetFirstTimeItemPurchases(int orderAssociateId, IEnumerable<int> itemIds)
+        public Dictionary<int, double> GetFirstTimeItemDiscounts(HashSet<int> itemIds)
+        {
+            const string sql =
+@"SELECT I.[recordnumber] AS ItemId, CAST(C.[Field2] AS FLOAT) AS FirstTimeItemDiscount
+FROM [dbo].[INV_Inventory] I
+JOIN [dbo].[INV_CustomFields] C ON C.[ItemID] = I.[recordnumber] AND ISNULL(C.[Field2], '') != ''
+WHERE I.[recordnumber] IN (@ItemIds);";
+
+            var itemDiscountsMap = new Dictionary<int, double>();
+            using var dbConnection = new SqlConnection(_dataService.GetClientConnectionString().ConfigureAwait(false).GetAwaiter().GetResult());
+            using var reader = dbConnection.ExecuteReader(sql, new { ItemIds = itemIds });
+            while (reader.Read())
+            {
+                itemDiscountsMap.Add((int)reader["ItemId"], (double)reader["FirstTimeItemDiscount"]);
+            }
+
+            return itemDiscountsMap;
+        }
+
+        public Dictionary<int, double> GetFirstTimeOrderCredits(HashSet<int> itemIds)
+        {
+            const string sql =
+                @"SELECT I.[recordnumber] AS ItemId, CAST(C.[Field1] AS FLOAT) AS FirstTimeOrderDiscount
+FROM [dbo].[INV_Inventory] I
+JOIN [dbo].[INV_CustomFields] C ON C.[ItemID] = I.[recordnumber] AND ISNULL(C.[Field1], '') != ''
+WHERE I.[recordnumber] IN (@ItemIds);";
+
+            var orderDiscountsMap = new Dictionary<int, double>();
+            using var dbConnection = new SqlConnection(_dataService.GetClientConnectionString().ConfigureAwait(false).GetAwaiter().GetResult());
+            using var reader = dbConnection.ExecuteReader(sql, new { ItemIds = itemIds });
+            while (reader.Read())
+            {
+                orderDiscountsMap.Add((int)reader["ItemId"], (double)reader["FirstTimeOrderDiscount"]);
+            }
+
+            return orderDiscountsMap;
+        }
+
+        public HashSet<int> GetFirstTimeItemPurchases(int orderAssociateId, HashSet<int> itemIds)
         {
             const string sql =
 @"SELECT [OrderItemId]
 FROM [Client].[RewardPointCredits]
 WHERE [OrderAssociateId] = @AssociateId
     AND [CreditType] = @CreditType
-	AND [OrderItemId] IN (@OrderItemIds)
+    AND [OrderItemId] IN (@ItemIds)
 GROUP BY [OrderItemId]
 HAVING COUNT([OrderItemId]) > 0;";
 
@@ -44,11 +84,11 @@ HAVING COUNT([OrderItemId]) > 0;";
             {
                 AssocaiteId = orderAssociateId,
                 CreditType = (int)RewardPointCreditType.FirstTimeItemPurchase,
-                OrderItemIds = itemIds
+                ItemIds = itemIds
             };
 
-            await using var dbConnection = new SqlConnection(await _dataService.GetClientConnectionString());
-            var result = await dbConnection.QueryAsync<int>(sql, parameters);
+            using var dbConnection = new SqlConnection(_dataService.GetClientConnectionString().ConfigureAwait(false).GetAwaiter().GetResult());
+            var result = dbConnection.Query<int>(sql, parameters);
             return new HashSet<int>(result);
         }
 
@@ -60,11 +100,11 @@ FROM [dbo].[ORD_Order] O
 LEFT JOIN [dbo].[ORD_CustomFields] C ON C.[OrderNumber] = O.[recordnumber] AND C.[Field1] <> 'TRUE'
 WHERE O.[DistributorID] = @AssociateId;";
 
-            using var dbConnection = new SqlConnection(_dataService.GetClientConnectionString().Result);
+            using var dbConnection = new SqlConnection(_dataService.GetClientConnectionString().ConfigureAwait(false).GetAwaiter().GetResult());
             return dbConnection.QueryFirstOrDefault<int>(sql, new { AssociateId = orderAssociateId });
         }
 
-        public async Task<int> GetRepAssociateId(int orderAssociateId)
+        public async Task<int> GetRepAssociateIdAsync(int orderAssociateId)
         {
             const string sql =
 @"SELECT TOP 1 E.[AssociateID]
@@ -76,7 +116,7 @@ WHERE D.[AssociateType] = 1;";
             return await dbConnection.QueryFirstOrDefaultAsync<int>(sql, new { AssociateId = orderAssociateId });
         }
 
-        public async Task SaveRewardPointCredit(RewardPointCredit rewardPointCredit)
+        public async Task SaveRewardPointCreditAsync(RewardPointCredit rewardPointCredit)
         {
             const string insertStatement =
 @"INSERT INTO [Client].[RewardPointCredits] ([OrderCommissionDate], [OrderNumber], [OrderAssociateId], [OrderAssociateName], [OrderItemId], [OrderItemSku], [OrderItemDescription], [OrderItemCredits], [CreditType], [AwardedAssociateId])
@@ -86,7 +126,7 @@ VALUES (@OrderCommissionDate, @OrderNumber, @OrderAssociateId, @OrderAssociateNa
             await dbConnection.ExecuteAsync(insertStatement, rewardPointCredit);
         }
 
-        public async Task SaveRewardPointCredits(List<RewardPointCredit> rewardPointCredits)
+        public async Task SaveRewardPointCreditsAsync(List<RewardPointCredit> rewardPointCredits)
         {
             const string bulkInsertStatement =
 @"INSERT INTO [Client].[RewardPointCredits] ([OrderCommissionDate], [OrderNumber], [OrderAssociateId], [OrderAssociateName], [OrderItemId], [OrderItemSku], [OrderItemDescription], [OrderItemCredits], [CreditType], [AwardedAssociateId])
@@ -97,7 +137,7 @@ FROM @RewardPointCredits TVP;";
             await dbConnection.ExecuteAsync(bulkInsertStatement, new { RewardPointCredits = CreateSaveRewardPointCreditsTvp(rewardPointCredits) });
         }
 
-        public async Task<Dictionary<int, List<RewardPointCredit>>> GetRewardPointCreditsByAwardedAssociateId(DateTimeOffset beginDate, DateTimeOffset endDate)
+        public async Task<Dictionary<int, List<RewardPointCredit>>> GetRewardPointCreditsByAwardedAssociateIdAsync(DateTimeOffset beginDate, DateTimeOffset endDate)
         {
             const string sql =
 @"SELECT [OrderCommissionDate]
