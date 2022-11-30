@@ -48,5 +48,6 @@ namespace WebExtension.Services.ZiplingoEngagementService.Model
         public string PaymentMethod { get; set; }
         public Address ShippingAddress { get; set; }
         public Address BillingAddress { get; set; }
+        public string TrackingUrl { get; set; }
     }
 }

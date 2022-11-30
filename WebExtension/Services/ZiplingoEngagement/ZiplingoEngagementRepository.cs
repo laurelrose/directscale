@@ -26,6 +26,8 @@ namespace WebExtension.Services.ZiplingoEngagementService
         void UpdateEventSetting(ZiplingoEventSettingRequest request);
         //EWalletSettingModel GetEWalletSetting();
         List<ServiceInfo> GetServiceExpirationInfoBefore2Weeks();
+        List<ShippingTrackingInfo> GetShippingTrackingInfo();
+
     }
     public class ZiplingoEngagementRepository : IZiplingoEngagementRepository
     {
@@ -285,6 +287,16 @@ join [dbo].[CRM_Distributors] d on acs.AssociateID = d.recordnumber
 
                 var info = dbConnection.QueryFirstOrDefault<List<ServiceInfo>>(query);
                 return info;
+            }
+        }
+
+        public List<ShippingTrackingInfo> GetShippingTrackingInfo()
+        {
+            using (var dbConnection = new System.Data.SqlClient.SqlConnection(_dataService.GetClientConnectionString().Result))
+            {
+                var query = $"SELECT ShippingUrl,TrackPattern FROM client.ShippingTrackingUrl";
+                var result = dbConnection.Query<ShippingTrackingInfo>(query).ToList();
+                return result;
             }
         }
     }

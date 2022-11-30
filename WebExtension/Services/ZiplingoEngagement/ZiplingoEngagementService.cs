@@ -13,6 +13,7 @@ using System.Net;
 using System.Net.Security;
 using WebExtension.Repositories;
 using WebExtension.Services.DailyRun.Models;
+using System.Text.RegularExpressions;
 
 namespace WebExtension.Services.ZiplingoEngagementService
 {
@@ -197,6 +198,24 @@ namespace WebExtension.Services.ZiplingoEngagementService
                         sponsorSummary = enrollerSummary;
                     }
                     var CardLastFourDegit = _ZiplingoEngagementRepository.GetLastFoutDegitByOrderNumber(order.Order.OrderNumber);
+
+                    // Track Shipping -----------------------------
+                    var TrackingUrl = "";
+                    var ShippingTrackingInfo = _ZiplingoEngagementRepository.GetShippingTrackingInfo();
+                    if (order.TrackingNumber != null)
+                    {
+                        foreach (var shipInfo in ShippingTrackingInfo)
+                        {
+                            Match m1 = Regex.Match(order.TrackingNumber, shipInfo.TrackPattern, RegexOptions.IgnoreCase);
+                            if (m1.Success)
+                            {
+                                TrackingUrl = shipInfo.ShippingUrl + order.TrackingNumber;
+                                break;
+                            }
+                        }
+                    }
+
+                    // Track Shipping -----------------------------
                     OrderData data = new OrderData
                     {
                         ShipMethodId = order.ShipMethodId, //ShipMethodId added
@@ -223,6 +242,7 @@ namespace WebExtension.Services.ZiplingoEngagementService
                         CompanyDomain = company.Result.BackOfficeHomePageURL,
                         LogoUrl = settings.LogoUrl,
                         TrackingNumber = order.TrackingNumber,
+                        TrackingUrl = TrackingUrl,
                         Carrier = order.Carrier,
                         DateShipped = order.DateShipped,
                         CompanyName = settings.CompanyName,
