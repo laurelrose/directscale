@@ -4,6 +4,7 @@ namespace WebExtension.Services.RewardPoints.Models
 {
     public class RewardPointCredit
     {
+        public int Id { get; set; }
         public int OrderNumber { get; set; }
         public DateTime OrderCommissionDate { get; set; }
         public int OrderAssociateId { get; set; }

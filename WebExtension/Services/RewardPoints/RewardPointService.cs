@@ -11,42 +11,86 @@ namespace WebExtension.Services.RewardPoints
 {
     public interface IRewardPointService
     {
-        Task AwardRewardPointCreditsAsync();
+        Task AwardRewardPointCreditsAsync(int? comPeriodId = null);
         Task SaveRewardPointCreditsAsync(Order order);
     }
 
     public class RewardPointService : IRewardPointService
     {
         private static readonly string _className = $"LaurelRose{nameof(RewardPointService)}";
+        private const int DaysBetweenComRunAndPayout = 9;
 
         private readonly ICustomLogService _customLogService;
         private readonly IOrderService _orderService;
         private readonly IRewardPointRepository _rewardPointRepository;
         private readonly IRewardPointsService _rewardPointsService;
+        private readonly IStatsService _statsService;
 
         public RewardPointService(
             ICustomLogService customLogService,
             IOrderService orderService,
             IRewardPointRepository rewardPointRepository,
-            IRewardPointsService rewardPointsService
+            IRewardPointsService rewardPointsService,
+            IStatsService statsService
         )
         {
             _customLogService = customLogService ?? throw new ArgumentNullException(nameof(customLogService));
             _orderService = orderService ?? throw new ArgumentNullException(nameof(orderService));
             _rewardPointRepository = rewardPointRepository ?? throw new ArgumentNullException(nameof(rewardPointRepository));
             _rewardPointsService = rewardPointsService ?? throw new ArgumentNullException(nameof(rewardPointsService));
+            _statsService = statsService ?? throw new ArgumentNullException(nameof(statsService));
         }
 
-        public async Task AwardRewardPointCreditsAsync()
+        public async Task AwardRewardPointCreditsAsync(int? comPeriodId = null)
         {
             try
             {
-                var commissionPeriodInfo = await _rewardPointRepository.GetCurrentCommissionPeriodInfoAsync();
-                var rewardPointCreditsMap = await _rewardPointRepository.GetRewardPointCreditsByAwardedAssociateIdAsync(commissionPeriodInfo.EndDate);
+                var commissionPeriodInfo = await _rewardPointRepository.GetCurrentCommissionPeriodInfoAsync(comPeriodId);
+                var dateToExecute = commissionPeriodInfo.CommitDate.Date.AddDays(DaysBetweenComRunAndPayout);
+                if (DateTime.Today >= dateToExecute.Date)
+                {
+                    await _customLogService.SaveLog(0, 0, $"{_className}.AwardRewardPointCreditsAsync", "Information", $"Skipping Reward Point Award Run: {DateTime.Today:d} is not at least {DaysBetweenComRunAndPayout} days after Commission Period {commissionPeriodInfo.CommissionPeriodId}'s commit date ({commissionPeriodInfo.CommitDate:d}).", "", "", "", "");
+                    return;
+                }
+
+                var rewardPointCreditsMap = await _rewardPointRepository.GetRewardPointCreditsByAwardedAssociateIdAsync(commissionPeriodInfo.BeginDate, commissionPeriodInfo.EndDate);
+                var associateStatsMap = await _statsService.GetStats(rewardPointCreditsMap.Keys.ToArray(), commissionPeriodInfo.EndDate);
+                var rewardPointCreditsToAdd = new List<RewardPointCredit>();
                 foreach (var kvp in rewardPointCreditsMap)
                 {
-                    
+                    if (associateStatsMap.TryGetValue(kvp.Key, out var associateStats)
+                        && associateStats != null
+                        && associateStats.Kpis["KIT"].Value > 0)
+                    {
+                        rewardPointCreditsToAdd.AddRange(kvp.Value);
+                    }
                 }
+
+                foreach (var rewardPointCredit in rewardPointCreditsToAdd)
+                {
+                    try
+                    {
+                        var descriptionString = $"Reward points earned from {rewardPointCredit.OrderAssociateName} Order {rewardPointCredit.OrderNumber}, Item {rewardPointCredit.OrderItemId} - '{rewardPointCredit.OrderItemDescription}'.";
+                        await _rewardPointsService.AddRewardPointsWithExpiration(
+                            rewardPointCredit.AwardedAssociateId,
+                            rewardPointCredit.OrderItemCredits,
+                            descriptionString,
+                            DateTime.Today,
+                            DateTime.Today.AddYears(1),
+                            rewardPointCredit.OrderNumber
+                        );
+
+                        rewardPointCredit.PayoutStatus = PayoutStatus.Paid;
+                        await _customLogService.SaveLog(rewardPointCredit.AwardedAssociateId, rewardPointCredit.OrderNumber, $"{_className}.AwardRewardPointCreditsAsync", "Payout Information", descriptionString, "", "", "", CommonMethod.Serialize(rewardPointCredit));
+                    }
+                    catch (Exception e)
+                    {
+                        rewardPointCredit.PayoutStatus = PayoutStatus.Error;
+                        await _customLogService.SaveLog(rewardPointCredit.AwardedAssociateId, rewardPointCredit.OrderNumber, $"{_className}.AwardRewardPointCreditsAsync", "Payout Error", e.Message, "", "", "", CommonMethod.Serialize(e));
+                    }
+                }
+
+                // TODO: Update PayoutStatus
             }
             catch (Exception e)
             {

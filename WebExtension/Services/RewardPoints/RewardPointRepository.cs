@@ -12,7 +12,7 @@ namespace WebExtension.Services.RewardPoints
 {
     public interface IRewardPointRepository
     {
-        Task<CommissionPeriodInfo> GetCurrentCommissionPeriodInfoAsync();
+        Task<CommissionPeriodInfo> GetCurrentCommissionPeriodInfoAsync(int? comPeriodId);
         Dictionary<int, double> GetFirstTimeItemDiscounts(HashSet<int> itemIds);
         Dictionary<int, double> GetFirstTimeOrderCredits(HashSet<int> itemIds);
         HashSet<int> GetFirstTimeItemPurchases(int orderAssociateId, HashSet<int> itemIds);
@@ -20,7 +20,7 @@ namespace WebExtension.Services.RewardPoints
         Task<int> GetRepAssociateIdAsync(int orderAssociateId);
         Task SaveRewardPointCreditAsync(RewardPointCredit rewardPointCredit);
         Task SaveRewardPointCreditsAsync(List<RewardPointCredit> rewardPointCredits);
-        Task<Dictionary<int, List<RewardPointCredit>>> GetRewardPointCreditsByAwardedAssociateIdAsync(DateTime endDate);
+        Task<Dictionary<int, List<RewardPointCredit>>> GetRewardPointCreditsByAwardedAssociateIdAsync(DateTime beginDate, DateTime endDate);
     }
 
     internal class RewardPointRepository : IRewardPointRepository
@@ -32,16 +32,26 @@ namespace WebExtension.Services.RewardPoints
             _dataService = dataService ?? throw new ArgumentException(nameof(dataService));
         }
 
-        public async Task<CommissionPeriodInfo> GetCurrentCommissionPeriodInfoAsync()
+        public async Task<CommissionPeriodInfo> GetCurrentCommissionPeriodInfoAsync(int? comPeriodId)
         {
+            if (comPeriodId.HasValue)
+            {
+                // TODO
+            }
+
             const string sql = 
-@"SELECT TOP 1 [recordnumber] AS CommissionPeriodId, [EndDate]
+@"SELECT TOP 1 [recordnumber] AS CommissionPeriodId, [BeginDate], [EndDate], [CommitDate]
 FROM [dbo].[CRM_CommissionPeriods]
 WHERE [PeriodType] = 'Weekly' AND [CommitDate] IS NOT NULL
 ORDER BY [recordnumber] DESC;";
 
             await using var dbConnection = new SqlConnection(await _dataService.GetClientConnectionString());
-            return await dbConnection.QuerySingleAsync<CommissionPeriodInfo>(sql);
+            var commissionPeriodInfo = await dbConnection.QuerySingleAsync<CommissionPeriodInfo>(sql);
+
+            // Making sure to get the full begin and end date and time range
+            commissionPeriodInfo.BeginDate = commissionPeriodInfo.BeginDate.Date;
+            commissionPeriodInfo.EndDate = commissionPeriodInfo.EndDate.Date.AddDays(1).AddMilliseconds(-1);
+            return commissionPeriodInfo;
         }
 
         public Dictionary<int, double> GetFirstTimeItemDiscounts(HashSet<int> itemIds)
@@ -150,10 +160,11 @@ FROM @RewardPointCredits TVP;";
             await dbConnection.ExecuteAsync(bulkInsertStatement, new { RewardPointCredits = CreateSaveRewardPointCreditsTvp(rewardPointCredits) });
         }
 
-        public async Task<Dictionary<int, List<RewardPointCredit>>> GetRewardPointCreditsByAwardedAssociateIdAsync(DateTime endDate)
+        public async Task<Dictionary<int, List<RewardPointCredit>>> GetRewardPointCreditsByAwardedAssociateIdAsync(DateTime beginDate, DateTime endDate)
         {
             var sql =
-$@"SELECT [OrderCommissionDate]
+$@"SELECT [recordnumber] AS Id
+    ,[OrderCommissionDate]
     ,[OrderNumber]
     ,[OrderAssociateId]
     ,[OrderAssociateName]
@@ -166,11 +177,17 @@ $@"SELECT [OrderCommissionDate]
     ,[PayoutStatus]
     ,[CommissionPeriodId]
 FROM [Client].[RewardPointCredits]
-WHERE [OrderCommissionDate] <= @EndDate
-    AND [PayoutStatus] != {(int)PayoutStatus.Paid};";
+WHERE ([OrderCommissionDate] <= @BeginDate AND [OrderCommissionDate] <= @EndDate AND [PayoutStatus] != {(int)PayoutStatus.Paid})
+    OR ([OrderCommissionDate] <= @EndDate AND [PayoutStatus] = {(int)PayoutStatus.Error});";
+
+            var parameters = new
+            {
+                BeginDate = beginDate,
+                EndDate = endDate
+            };
 
             await using var dbConnection = new SqlConnection(await _dataService.GetClientConnectionString());
-            var rewardPointCredits = await dbConnection.QueryAsync<RewardPointCredit>(sql, new { EndDate = endDate });
+            var rewardPointCredits = await dbConnection.QueryAsync<RewardPointCredit>(sql, parameters);
             var rewardPointCreditsByAwardedAssociateId = new Dictionary<int, List<RewardPointCredit>>();
             foreach (var rewardPointCredit in rewardPointCredits)
             {
