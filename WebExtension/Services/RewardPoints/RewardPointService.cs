@@ -43,6 +43,10 @@ namespace WebExtension.Services.RewardPoints
             {
                 var commissionPeriodInfo = await _rewardPointRepository.GetCurrentCommissionPeriodInfoAsync();
                 var rewardPointCreditsMap = await _rewardPointRepository.GetRewardPointCreditsByAwardedAssociateIdAsync(commissionPeriodInfo.EndDate);
+                foreach (var kvp in rewardPointCreditsMap)
+                {
+                    
+                }
             }
             catch (Exception e)
             {
