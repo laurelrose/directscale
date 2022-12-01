@@ -18,9 +18,10 @@ namespace WebExtension.Services.RewardPoints
         HashSet<int> GetFirstTimeItemPurchases(int orderAssociateId, HashSet<int> itemIds);
         int GetFirstTimeOrderPurchaseCount(int orderAssociateId);
         Task<int> GetRepAssociateIdAsync(int orderAssociateId);
+        Task<Dictionary<int, List<RewardPointCredit>>> GetRewardPointCreditsByAwardedAssociateIdAsync(DateTime beginDate, DateTime endDate);
         Task SaveRewardPointCreditAsync(RewardPointCredit rewardPointCredit);
         Task SaveRewardPointCreditsAsync(List<RewardPointCredit> rewardPointCredits);
-        Task<Dictionary<int, List<RewardPointCredit>>> GetRewardPointCreditsByAwardedAssociateIdAsync(DateTime beginDate, DateTime endDate);
+        Task UpdateRewardPointCreditsAsync(List<RewardPointCredit> rewardPointCredits);
     }
 
     internal class RewardPointRepository : IRewardPointRepository
@@ -34,16 +35,22 @@ namespace WebExtension.Services.RewardPoints
 
         public async Task<CommissionPeriodInfo> GetCurrentCommissionPeriodInfoAsync(int? comPeriodId)
         {
+            string whereStatement;
             if (comPeriodId.HasValue)
             {
-                // TODO
+                whereStatement = $"WHERE [recordnumber] = {comPeriodId.Value}";
+            }
+            else
+            {
+                whereStatement =
+@"WHERE [PeriodType] = 'Weekly' AND [CommitDate] IS NOT NULL
+ORDER BY [recordnumber] DESC";
             }
 
-            const string sql = 
-@"SELECT TOP 1 [recordnumber] AS CommissionPeriodId, [BeginDate], [EndDate], [CommitDate]
+            var sql =
+$@"SELECT TOP 1 [recordnumber] AS CommissionPeriodId, [BeginDate], [EndDate], [CommitDate]
 FROM [dbo].[CRM_CommissionPeriods]
-WHERE [PeriodType] = 'Weekly' AND [CommitDate] IS NOT NULL
-ORDER BY [recordnumber] DESC;";
+{whereStatement};";
 
             await using var dbConnection = new SqlConnection(await _dataService.GetClientConnectionString());
             var commissionPeriodInfo = await dbConnection.QuerySingleAsync<CommissionPeriodInfo>(sql);
@@ -142,28 +149,56 @@ WHERE D.[AssociateType] = 1;";
         public async Task SaveRewardPointCreditAsync(RewardPointCredit rewardPointCredit)
         {
             var insertStatement =
-@"INSERT INTO [Client].[RewardPointCredits] ([OrderCommissionDate], [OrderNumber], [OrderAssociateId], [OrderAssociateName], [OrderItemId], [OrderItemSku], [OrderItemDescription], [OrderItemCredits], [CreditType], [AwardedAssociateId], [PayoutStatus])
-VALUES (@OrderCommissionDate, @OrderNumber, @OrderAssociateId, @OrderAssociateName, @OrderItemId, @OrderItemSku, @OrderItemDescription, @OrderItemCredits, @CreditType, @AwardedAssociateId, @PayoutStatus);";
+@"INSERT INTO [Client].[RewardPointCredits] ([last_modified], [OrderCommissionDate], [OrderNumber], [OrderAssociateId], [OrderAssociateName], [OrderItemId], [OrderItemSku], [OrderItemDescription], [OrderItemCredits], [CreditType], [AwardedAssociateId], [PayoutStatus])
+VALUES (@LastModified, @OrderCommissionDate, @OrderNumber, @OrderAssociateId, @OrderAssociateName, @OrderItemId, @OrderItemSku, @OrderItemDescription, @OrderItemCredits, @CreditType, @AwardedAssociateId, @PayoutStatus);";
+
+            var parameters = new
+            {
+                LastModified = DateTime.Now,
+                OrderCommissionDate = rewardPointCredit.OrderCommissionDate,
+                OrderNumber = rewardPointCredit.OrderNumber,
+                OrderAssociateId = rewardPointCredit.OrderAssociateId,
+                OrderAssociateName = rewardPointCredit.OrderAssociateName,
+                OrderItemId = rewardPointCredit.OrderItemId,
+                OrderItemSku = rewardPointCredit.OrderItemSku,
+                OrderItemDescription = rewardPointCredit.OrderItemDescription,
+                OrderItemCredits = rewardPointCredit.OrderItemCredits,
+                CreditType = (int)rewardPointCredit.CreditType,
+                AwardedAssociateId = rewardPointCredit.AwardedAssociateId,
+                PayoutStatus = (int)rewardPointCredit.PayoutStatus
+            };
 
             await using var dbConnection = new SqlConnection(await _dataService.GetClientConnectionString());
-            await dbConnection.ExecuteAsync(insertStatement, rewardPointCredit);
+            await dbConnection.ExecuteAsync(insertStatement, parameters);
         }
 
         public async Task SaveRewardPointCreditsAsync(List<RewardPointCredit> rewardPointCredits)
         {
             var bulkInsertStatement =
-@"INSERT INTO [Client].[RewardPointCredits] ([OrderCommissionDate], [OrderNumber], [OrderAssociateId], [OrderAssociateName], [OrderItemId], [OrderItemSku], [OrderItemDescription], [OrderItemCredits], [CreditType], [AwardedAssociateId], [PayoutStatus])
-SELECT [OrderCommissionDate], [OrderNumber], [OrderAssociateId], [OrderAssociateName], [OrderItemId], [OrderItemSku], [OrderItemDescription], [OrderItemCredits], [CreditType], [AwardedAssociateId], [PayoutStatus]
+@"INSERT INTO [Client].[RewardPointCredits] ([last_modified], [OrderCommissionDate], [OrderNumber], [OrderAssociateId], [OrderAssociateName], [OrderItemId], [OrderItemSku], [OrderItemDescription], [OrderItemCredits], [CreditType], [AwardedAssociateId], [PayoutStatus])
+SELECT [last_modified], [OrderCommissionDate], [OrderNumber], [OrderAssociateId], [OrderAssociateName], [OrderItemId], [OrderItemSku], [OrderItemDescription], [OrderItemCredits], [CreditType], [AwardedAssociateId], [PayoutStatus]
 FROM @RewardPointCredits TVP;";
 
             await using var dbConnection = new SqlConnection(await _dataService.GetClientConnectionString());
             await dbConnection.ExecuteAsync(bulkInsertStatement, new { RewardPointCredits = CreateSaveRewardPointCreditsTvp(rewardPointCredits) });
         }
 
+        public async Task UpdateRewardPointCreditsAsync(List<RewardPointCredit> rewardPointCredits)
+        {
+            const string bulkUpdateStatement =
+@"UPDATE R
+SET R.[PayoutStatus] = TVP.[PayoutStatus], R.[CommissionPeriodId] = TVP.[CommissionPeriodId]
+FROM [Client].[RewardPointCredits] R
+JOIN @RewardPointCreditIds TVP ON TVP.[recordnumber] = R.[recordnumber];";
+
+            await using var dbConnection = new SqlConnection(await _dataService.GetClientConnectionString());
+            await dbConnection.ExecuteAsync(bulkUpdateStatement, new { RewardPointCreditIds = CreateUpdateRewardPointCreditsTvp(rewardPointCredits) });
+        }
+
         public async Task<Dictionary<int, List<RewardPointCredit>>> GetRewardPointCreditsByAwardedAssociateIdAsync(DateTime beginDate, DateTime endDate)
         {
-            var sql =
-$@"SELECT [recordnumber] AS Id
+            const string sql =
+@"SELECT [recordnumber] AS Id
     ,[OrderCommissionDate]
     ,[OrderNumber]
     ,[OrderAssociateId]
@@ -177,13 +212,15 @@ $@"SELECT [recordnumber] AS Id
     ,[PayoutStatus]
     ,[CommissionPeriodId]
 FROM [Client].[RewardPointCredits]
-WHERE ([OrderCommissionDate] <= @BeginDate AND [OrderCommissionDate] <= @EndDate AND [PayoutStatus] != {(int)PayoutStatus.Paid})
-    OR ([OrderCommissionDate] <= @EndDate AND [PayoutStatus] = {(int)PayoutStatus.Error});";
+WHERE ([OrderCommissionDate] <= @BeginDate AND [OrderCommissionDate] <= @EndDate AND [PayoutStatus] != @PaidPayoutStatus)
+    OR ([OrderCommissionDate] <= @EndDate AND [PayoutStatus] = @ErrorPayoutStatus);";
 
             var parameters = new
             {
                 BeginDate = beginDate,
-                EndDate = endDate
+                EndDate = endDate,
+                ErrorPayoutStatus = (int)PayoutStatus.Error,
+                PaidPayoutStatus = (int)PayoutStatus.Paid
             };
 
             await using var dbConnection = new SqlConnection(await _dataService.GetClientConnectionString());
@@ -205,7 +242,8 @@ WHERE ([OrderCommissionDate] <= @BeginDate AND [OrderCommissionDate] <= @EndDate
         private static SqlMapper.ICustomQueryParameter CreateSaveRewardPointCreditsTvp(List<RewardPointCredit> rewardPointCredits)
         {
             var dataTable = new DataTable();
-            dataTable.Columns.Add(new DataColumn("OrderCommissionDate", typeof(DateTimeOffset)));
+            dataTable.Columns.Add(new DataColumn("last_modified", typeof(DateTime)));
+            dataTable.Columns.Add(new DataColumn("OrderCommissionDate", typeof(DateTime)));
             dataTable.Columns.Add(new DataColumn("OrderNumber", typeof(int)));
             dataTable.Columns.Add(new DataColumn("OrderAssociateId", typeof(int)));
             dataTable.Columns.Add(new DataColumn("OrderAssociateName", typeof(string)));
@@ -220,9 +258,11 @@ WHERE ([OrderCommissionDate] <= @BeginDate AND [OrderCommissionDate] <= @EndDate
 
             if (rewardPointCredits != null && rewardPointCredits.Any())
             {
+                var now = DateTime.Now;
                 foreach (var rewardPointCredit in rewardPointCredits)
                 {
                     var row = dataTable.NewRow();
+                    row["last_modified"] = now;
                     row["OrderCommissionDate"] = rewardPointCredit.OrderCommissionDate;
                     row["OrderNumber"] = rewardPointCredit.OrderNumber;
                     row["OrderAssociateId"] = rewardPointCredit.OrderAssociateId;
@@ -241,6 +281,32 @@ WHERE ([OrderCommissionDate] <= @BeginDate AND [OrderCommissionDate] <= @EndDate
             }
 
             return dataTable.AsTableValuedParameter("[Client].[RewardPointCredits]");
+        }
+
+        private static SqlMapper.ICustomQueryParameter CreateUpdateRewardPointCreditsTvp(List<RewardPointCredit> rewardPointCredits)
+        {
+            var dataTable = new DataTable();
+            dataTable.Columns.Add(new DataColumn("recordnumber", typeof(int)));
+            dataTable.Columns.Add(new DataColumn("last_modified", typeof(DateTime)));
+            dataTable.Columns.Add(new DataColumn("PayoutStatus", typeof(int)));
+            dataTable.Columns.Add(new DataColumn("CommissionPeriodId", typeof(int)) { AllowDBNull = true });
+
+            if (rewardPointCredits != null && rewardPointCredits.Any())
+            {
+                var now = DateTime.Now;
+                foreach (var rewardPointCredit in rewardPointCredits)
+                {
+                    var row = dataTable.NewRow();
+                    row["recordnumber"] = rewardPointCredit.Id;
+                    row["last_modified"] = now;
+                    row["PayoutStatus"] = (int)rewardPointCredit.PayoutStatus;
+                    row["CommissionPeriodId"] = rewardPointCredit.CommissionPeriodId ?? (object)DBNull.Value;
+
+                    dataTable.Rows.Add(row);
+                }
+            }
+
+            return dataTable.AsTableValuedParameter("[Client].[RewardPointCredits_Update]");
         }
     }
 }

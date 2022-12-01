@@ -80,6 +80,7 @@ namespace WebExtension.Services.RewardPoints
                             rewardPointCredit.OrderNumber
                         );
 
+                        rewardPointCredit.CommissionPeriodId = commissionPeriodInfo.CommissionPeriodId;
                         rewardPointCredit.PayoutStatus = PayoutStatus.Paid;
                         await _customLogService.SaveLog(rewardPointCredit.AwardedAssociateId, rewardPointCredit.OrderNumber, $"{_className}.AwardRewardPointCreditsAsync", "Payout Information", descriptionString, "", "", "", CommonMethod.Serialize(rewardPointCredit));
                     }
@@ -90,7 +91,7 @@ namespace WebExtension.Services.RewardPoints
                     }
                 }
 
-                // TODO: Update PayoutStatus
+                await _rewardPointRepository.UpdateRewardPointCreditsAsync(rewardPointCreditsToAdd);
             }
             catch (Exception e)
             {
