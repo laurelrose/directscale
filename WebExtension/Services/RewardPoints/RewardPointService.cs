@@ -41,7 +41,8 @@ namespace WebExtension.Services.RewardPoints
         {
             try
             {
-                var rewardPointCreditsMap = _rewardPointRepository.GetRewardPointCreditsByAwardedAssociateIdAsync();
+                var commissionPeriodInfo = await _rewardPointRepository.GetCurrentCommissionPeriodInfoAsync();
+                var rewardPointCreditsMap = await _rewardPointRepository.GetRewardPointCreditsByAwardedAssociateIdAsync(commissionPeriodInfo.EndDate);
             }
             catch (Exception e)
             {
@@ -79,7 +80,8 @@ namespace WebExtension.Services.RewardPoints
                                 OrderItemDescription = orderLineItem.ProductName,
                                 OrderItemId = orderLineItem.ItemId,
                                 OrderItemSku = orderLineItem.SKU,
-                                OrderNumber = order.OrderNumber
+                                OrderNumber = order.OrderNumber,
+                                PayoutStatus = PayoutStatus.Unpaid
                             });
 
                             awardedOrderItemIds.Add(orderLineItem.ItemId);
@@ -105,7 +107,8 @@ namespace WebExtension.Services.RewardPoints
                                 OrderItemDescription = orderLineItem.ProductName,
                                 OrderItemId = orderLineItem.ItemId,
                                 OrderItemSku = orderLineItem.SKU,
-                                OrderNumber = order.OrderNumber
+                                OrderNumber = order.OrderNumber,
+                                PayoutStatus = PayoutStatus.Unpaid
                             });
 
                             awardedItemItemIds.Add(orderLineItem.ItemId);
