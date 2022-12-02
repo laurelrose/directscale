@@ -112,7 +112,7 @@ HAVING COUNT([OrderItemId]) > 0;";
 
             var parameters = new
             {
-                AssocaiteId = orderAssociateId,
+                AssociateId = orderAssociateId,
                 CreditType = (int)RewardPointCreditType.FirstTimeItemPurchase,
                 ItemIds = itemIds
             };

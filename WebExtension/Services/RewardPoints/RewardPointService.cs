@@ -12,7 +12,7 @@ namespace WebExtension.Services.RewardPoints
     public interface IRewardPointService
     {
         Task AwardRewardPointCreditsAsync(int? comPeriodId = null);
-        Task SaveRewardPointCreditsAsync(Order order);
+        Task SaveRewardPointCreditsAsync(int orderNumber);
     }
 
     public class RewardPointService : IRewardPointService
@@ -99,10 +99,12 @@ namespace WebExtension.Services.RewardPoints
             }
         }
 
-        public async Task SaveRewardPointCreditsAsync(Order order)
+        public async Task SaveRewardPointCreditsAsync(int orderNumber)
         {
+            Order order = null;
             try
             {
+                order = await _orderService.GetOrderByOrderNumber(orderNumber);
                 var repAssociateId = await GetRepAssociateIdAsync(order.AssociateId);
                 if (order.AssociateId == repAssociateId)
                 {
@@ -187,8 +189,12 @@ namespace WebExtension.Services.RewardPoints
             }
             catch (Exception e)
             {
-                await _orderService.Log(order.OrderNumber, $"RewardPoint Credits: Error recording reward point credits: '{e.Message}'. Please review Custom Logs.");
-                await _customLogService.SaveLog(order.AssociateId, order.OrderNumber, $"{_className}.SaveRewardPointCreditsAsync", "Error", e.Message, "", "", "", CommonMethod.Serialize(e));
+                if (order != null)
+                {
+                    await _orderService.Log(order.OrderNumber, $"RewardPoint Credits: Error recording reward point credits: '{e.Message}'. Please review Custom Logs.");
+                }
+
+                await _customLogService.SaveLog(order?.AssociateId ?? 0, order?.OrderNumber ?? 0, $"{_className}.SaveRewardPointCreditsAsync", "Error", e.Message, "", "", "", CommonMethod.Serialize(e));
             }
         }
 
@@ -206,7 +212,7 @@ namespace WebExtension.Services.RewardPoints
         private bool TryGetFirstTimeItemCredits(Order order, HashSet<int> awardedOrderItemIds, out Dictionary<int, double> itemCreditMap)
         {
             bool hasFirstTimeItems;
-            if (order.Custom.Field1.Equals("TRUE", StringComparison.OrdinalIgnoreCase))
+            if ("TRUE".Equals(order.Custom.Field1))
             {
                 itemCreditMap = new Dictionary<int, double>();
                 hasFirstTimeItems = false;
@@ -229,7 +235,7 @@ namespace WebExtension.Services.RewardPoints
         private bool TryGetFirstTimeOrderCredits(Order order, out Dictionary<int, double> orderCreditMap)
         {
             bool isFirstTimeOrder;
-            if (order.Custom.Field1.Equals("TRUE", StringComparison.OrdinalIgnoreCase) || _rewardPointRepository.GetFirstTimeOrderPurchaseCount(order.AssociateId) > 1)
+            if (order.Custom is { Field1: "TRUE" } || _rewardPointRepository.GetFirstTimeOrderPurchaseCount(order.AssociateId) > 1)
             {
                 orderCreditMap = new Dictionary<int, double>();
                 isFirstTimeOrder = false;

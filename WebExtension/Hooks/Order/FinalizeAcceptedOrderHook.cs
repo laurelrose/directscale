@@ -88,7 +88,7 @@ namespace WebExtension.Hooks.Order
                 //await _ziplingoEngagementService.SaveCustomLogs(request.Order.AssociateId, request.Order.OrderNumber,"", "Error : " + ex.Message);
             }
 
-            await _rewardPointService.SaveRewardPointCreditsAsync(request.Order);
+            await _rewardPointService.SaveRewardPointCreditsAsync(request.Order.OrderNumber);
 
             return result;
         }
