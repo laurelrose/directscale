@@ -212,7 +212,7 @@ JOIN @RewardPointCreditIds TVP ON TVP.[recordnumber] = R.[recordnumber];";
     ,[PayoutStatus]
     ,[CommissionPeriodId]
 FROM [Client].[RewardPointCredits]
-WHERE ([OrderCommissionDate] <= @BeginDate AND [OrderCommissionDate] <= @EndDate AND [PayoutStatus] != @PaidPayoutStatus)
+WHERE ([OrderCommissionDate] > @BeginDate AND [OrderCommissionDate] <= @EndDate AND [PayoutStatus] != @PaidPayoutStatus)
     OR ([OrderCommissionDate] <= @EndDate AND [PayoutStatus] = @ErrorPayoutStatus);";
 
             var parameters = new
