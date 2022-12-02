@@ -101,6 +101,19 @@ namespace WebExtension.Helper
             return BadRequest(response);
 
         }
+
+        public IActionResult ErrorResult(Exception ex)
+        {
+            var response = new APIResponse
+            {
+                Status = StatusCodes.Status500InternalServerError.ToString(),
+                Message = ex.Message,
+                Error = ""
+            };
+
+            return StatusCode(StatusCodes.Status500InternalServerError, response);
+        }
+
         public IActionResult NotFoundResult(object obj = null)
         {
             APIResponse response = new APIResponse();

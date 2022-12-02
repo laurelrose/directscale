@@ -5,7 +5,7 @@ namespace WebExtension.Services.TableCreation
 {
     public interface ITableCreationService
     {
-        public Task CreateRewardPointCreditTable();
+        public Task CreateRewardPointCreditInfrastructure();
     }
 
     internal class TableCreationService : ITableCreationService
@@ -17,9 +17,9 @@ namespace WebExtension.Services.TableCreation
             _tableCreationRepository = tableCreationRepository ?? throw new ArgumentNullException(nameof(tableCreationRepository));
         }
 
-        public async Task CreateRewardPointCreditTable()
+        public async Task CreateRewardPointCreditInfrastructure()
         {
-            await _tableCreationRepository.CreateRewardPointCreditTable();
+            await _tableCreationRepository.CreateRewardPointCreditInfrastructure();
         }
     }
 }

@@ -8,7 +8,7 @@ namespace WebExtension.Services.TableCreation
 {
     public interface ITableCreationRepository
     {
-        public Task CreateRewardPointCreditTable();
+        public Task CreateRewardPointCreditInfrastructure();
     }
 
     internal class TableCreationRepository : ITableCreationRepository
@@ -20,7 +20,7 @@ namespace WebExtension.Services.TableCreation
             _dataService = dataService ?? throw new ArgumentNullException(nameof(dataService));
         }
 
-        public async Task CreateRewardPointCreditTable()
+        public async Task CreateRewardPointCreditInfrastructure()
         {
             const string createStatement =
 @"IF NOT EXISTS (SELECT 1 FROM sys.tables WHERE [name] = N'RewardPointCredits' AND [type] = 'U' AND [schema_id] = (SELECT [schema_id] FROM sys.schemas WHERE [name] = 'Client'))

@@ -96,7 +96,7 @@ namespace WebExtension
                 c.AddHook<CreateAutoshipHook>();
 
                 //Event Handler
-                //options.AddEventHandler("CreateAssociateEvent", "/api/WebHook/CreateAssociateEvent");
+                c.AddEventHandler("DailyEvent", "/api/WebHook/DailyEvent");
             });
 
             services.AddControllersWithViews();
