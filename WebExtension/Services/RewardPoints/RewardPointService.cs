@@ -4,6 +4,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using Microsoft.CodeAnalysis.CSharp.Syntax;
 using WebExtension.Helper;
 using WebExtension.Services.RewardPoints.Models;
 
@@ -18,7 +19,10 @@ namespace WebExtension.Services.RewardPoints
     public class RewardPointService : IRewardPointService
     {
         private static readonly string _className = $"LaurelRose{nameof(RewardPointService)}";
-        private const int DaysBetweenComRunAndPayout = 9;
+
+        // Typically, LaurelRose commits and pays ont on the same day.
+        // We are processing the RWD credits the day after for good measure.
+        private const int DaysBetweenCommitAndPayout = 1;
 
         private readonly ICustomLogService _customLogService;
         private readonly IOrderService _orderService;
@@ -46,14 +50,19 @@ namespace WebExtension.Services.RewardPoints
             try
             {
                 var commissionPeriodInfo = await _rewardPointRepository.GetCurrentCommissionPeriodInfoAsync(comPeriodId);
-                var dateToExecute = commissionPeriodInfo.CommitDate.Date.AddDays(DaysBetweenComRunAndPayout);
-                if (DateTime.Today >= dateToExecute.Date)
+                if (commissionPeriodInfo is null)
                 {
-                    await _customLogService.SaveLog(0, 0, $"{_className}.AwardRewardPointCreditsAsync", "Information", $"Skipping Reward Point Award Run: {DateTime.Today:d} is not at least {DaysBetweenComRunAndPayout} days after Commission Period {commissionPeriodInfo.CommissionPeriodId}'s commit date ({commissionPeriodInfo.CommitDate:d}).", "", "", "", "");
+                    throw new Exception("Unable to retrieve Commission Period Info");
+                }
+
+                var dateToExecute = commissionPeriodInfo.CommitDate.Date.AddDays(DaysBetweenCommitAndPayout);
+                if (DateTime.Today < dateToExecute.Date)
+                {
+                    await _customLogService.SaveLog(0, 0, $"{_className}.AwardRewardPointCreditsAsync", "Information", $"Skipping Reward Point Award Run: {DateTime.Today:d} is not at least {DaysBetweenCommitAndPayout} day after Commission Period {commissionPeriodInfo.CommissionPeriodId}'s commit date ({commissionPeriodInfo.CommitDate:d}).", "", "", "", "");
                     return;
                 }
 
-                var rewardPointCreditsMap = await _rewardPointRepository.GetRewardPointCreditsByAwardedAssociateIdAsync(commissionPeriodInfo.BeginDate, commissionPeriodInfo.EndDate);
+                var rewardPointCreditsMap = await _rewardPointRepository.GetAssociateRewardPointCredits(commissionPeriodInfo.BeginDate, commissionPeriodInfo.EndDate);
                 var associateStatsMap = await _statsService.GetStats(rewardPointCreditsMap.Keys.ToArray(), commissionPeriodInfo.EndDate);
                 var rewardPointCreditsToAdd = new List<RewardPointCredit>();
                 foreach (var kvp in rewardPointCreditsMap)
@@ -64,6 +73,12 @@ namespace WebExtension.Services.RewardPoints
                     {
                         rewardPointCreditsToAdd.AddRange(kvp.Value);
                     }
+                }
+
+                if (!rewardPointCreditsToAdd.Any())
+                {
+                    await _customLogService.SaveLog(0, 0, $"{_className}.AwardRewardPointCreditsAsync", "Information", "Terminating process - no Reward Point Credits to add.", "", "", "", "");
+                    return;
                 }
 
                 foreach (var rewardPointCredit in rewardPointCreditsToAdd)
@@ -92,6 +107,14 @@ namespace WebExtension.Services.RewardPoints
                 }
 
                 await _rewardPointRepository.UpdateRewardPointCreditsAsync(rewardPointCreditsToAdd);
+                if (rewardPointCreditsToAdd.Any(x => x.PayoutStatus == PayoutStatus.Error))
+                {
+                    await _customLogService.SaveLog(0, 0, $"{_className}.AwardRewardPointCreditsAsync", "Information", "Process complete with errors.", "", "", "", "");
+                }
+                else
+                {
+                    await _customLogService.SaveLog(0, 0, $"{_className}.AwardRewardPointCreditsAsync", "Information", "Process complete.", "", "", "", "");
+                }
             }
             catch (Exception e)
             {

@@ -18,7 +18,7 @@ namespace WebExtension.Services.RewardPoints
         HashSet<int> GetFirstTimeItemPurchases(int orderAssociateId, HashSet<int> itemIds);
         int GetFirstTimeOrderPurchaseCount(int orderAssociateId);
         Task<int> GetRepAssociateIdAsync(int orderAssociateId);
-        Task<Dictionary<int, List<RewardPointCredit>>> GetRewardPointCreditsByAwardedAssociateIdAsync(DateTime beginDate, DateTime endDate);
+        Task<Dictionary<int, List<RewardPointCredit>>> GetAssociateRewardPointCredits(DateTime beginDate, DateTime endDate);
         Task SaveRewardPointCreditAsync(RewardPointCredit rewardPointCredit);
         Task SaveRewardPointCreditsAsync(List<RewardPointCredit> rewardPointCredits);
         Task UpdateRewardPointCreditsAsync(List<RewardPointCredit> rewardPointCredits);
@@ -195,7 +195,7 @@ JOIN @RewardPointCreditIds TVP ON TVP.[recordnumber] = R.[recordnumber];";
             await dbConnection.ExecuteAsync(bulkUpdateStatement, new { RewardPointCreditIds = CreateUpdateRewardPointCreditsTvp(rewardPointCredits) });
         }
 
-        public async Task<Dictionary<int, List<RewardPointCredit>>> GetRewardPointCreditsByAwardedAssociateIdAsync(DateTime beginDate, DateTime endDate)
+        public async Task<Dictionary<int, List<RewardPointCredit>>> GetAssociateRewardPointCredits(DateTime beginDate, DateTime endDate)
         {
             const string sql =
 @"SELECT [recordnumber] AS Id
