@@ -13,7 +13,7 @@ namespace WebExtension.Services.RewardPoints
     public interface IRewardPointRepository
     {
         Task<CommissionPeriodInfo> GetCurrentCommissionPeriodInfoAsync(int? comPeriodId);
-        Dictionary<int, double> GetFirstTimeItemDiscounts(HashSet<int> itemIds);
+        Dictionary<int, double> GetFirstTimeItemCredits(HashSet<int> itemIds);
         Dictionary<int, double> GetFirstTimeOrderCredits(HashSet<int> itemIds);
         HashSet<int> GetFirstTimeItemPurchases(int orderAssociateId, HashSet<int> itemIds);
         int GetFirstTimeOrderPurchaseCount(int orderAssociateId);
@@ -61,7 +61,7 @@ FROM [dbo].[CRM_CommissionPeriods]
             return commissionPeriodInfo;
         }
 
-        public Dictionary<int, double> GetFirstTimeItemDiscounts(HashSet<int> itemIds)
+        public Dictionary<int, double> GetFirstTimeItemCredits(HashSet<int> itemIds)
         {
             const string sql =
 @"SELECT I.[recordnumber] AS ItemId, CAST(C.[Field2] AS FLOAT) AS FirstTimeItemDiscount

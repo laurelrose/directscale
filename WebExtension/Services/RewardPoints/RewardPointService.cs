@@ -97,11 +97,13 @@ namespace WebExtension.Services.RewardPoints
 
                         rewardPointCredit.CommissionPeriodId = commissionPeriodInfo.CommissionPeriodId;
                         rewardPointCredit.PayoutStatus = PayoutStatus.Paid;
+                        await _orderService.Log(rewardPointCredit.OrderNumber, "RewardPoint Credits awarded successfully.");
                         await _customLogService.SaveLog(rewardPointCredit.AwardedAssociateId, rewardPointCredit.OrderNumber, $"{_className}.AwardRewardPointCreditsAsync", "Payout Information", descriptionString, "", "", "", CommonMethod.Serialize(rewardPointCredit));
                     }
                     catch (Exception e)
                     {
                         rewardPointCredit.PayoutStatus = PayoutStatus.Error;
+                        await _orderService.Log(rewardPointCredit.OrderNumber, "Error awarding RewardPoint Credits. Check custom logs for details.");
                         await _customLogService.SaveLog(rewardPointCredit.AwardedAssociateId, rewardPointCredit.OrderNumber, $"{_className}.AwardRewardPointCreditsAsync", "Payout Error", e.Message, "", "", "", CommonMethod.Serialize(e));
                     }
                 }
@@ -235,7 +237,7 @@ namespace WebExtension.Services.RewardPoints
         private bool TryGetFirstTimeItemCredits(Order order, HashSet<int> awardedOrderItemIds, out Dictionary<int, double> itemCreditMap)
         {
             bool hasFirstTimeItems;
-            if ("TRUE".Equals(order.Custom.Field1))
+            if ("TRUE".Equals(order.Custom.Field1, StringComparison.OrdinalIgnoreCase))
             {
                 itemCreditMap = new Dictionary<int, double>();
                 hasFirstTimeItems = false;
@@ -248,7 +250,7 @@ namespace WebExtension.Services.RewardPoints
                 var itemsIdsAlreadyDiscounted = _rewardPointRepository.GetFirstTimeItemPurchases(order.AssociateId, itemIds);
                 itemIds.ExceptWith(itemsIdsAlreadyDiscounted);
 
-                itemCreditMap = _rewardPointRepository.GetFirstTimeItemDiscounts(itemIds);
+                itemCreditMap = _rewardPointRepository.GetFirstTimeItemCredits(itemIds);
                 hasFirstTimeItems = itemCreditMap.Any();
             }
 
@@ -258,7 +260,7 @@ namespace WebExtension.Services.RewardPoints
         private bool TryGetFirstTimeOrderCredits(Order order, out Dictionary<int, double> orderCreditMap)
         {
             bool isFirstTimeOrder;
-            if (order.Custom is { Field1: "TRUE" } || _rewardPointRepository.GetFirstTimeOrderPurchaseCount(order.AssociateId) > 1)
+            if ("TRUE".Equals(order.Custom.Field1, StringComparison.OrdinalIgnoreCase) || _rewardPointRepository.GetFirstTimeOrderPurchaseCount(order.AssociateId) > 0)
             {
                 orderCreditMap = new Dictionary<int, double>();
                 isFirstTimeOrder = false;
