@@ -532,8 +532,7 @@ namespace WebExtensionTests.Services.RewardPoints
             // Assert
             RewardPointRepositoryMock.Verify(x => x.SaveRewardPointCreditAsync(It.IsAny<RewardPointCredit>()), Times.Never);
             RewardPointRepositoryMock.Verify(x => x.SaveRewardPointCreditsAsync(It.IsAny<List<RewardPointCredit>>()), Times.Once);
-            OrderServiceMock.Verify(x => x.Log(OrderNumber, It.Is<string>(y => y.Contains("First-time Order credit awarded"))), Times.Once);
-            OrderServiceMock.Verify(x => x.Log(OrderNumber, It.Is<string>(y => y.Contains("First-time Item credit awarded"))), Times.Never);
+            OrderServiceMock.Verify(x => x.Log(OrderNumber, It.Is<string>(y => y.Contains("points awarded from item"))), Times.Once);
         }
 
         [Test]
@@ -562,8 +561,7 @@ namespace WebExtensionTests.Services.RewardPoints
             // Assert
             RewardPointRepositoryMock.Verify(x => x.SaveRewardPointCreditAsync(It.IsAny<RewardPointCredit>()), Times.Once);
             RewardPointRepositoryMock.Verify(x => x.SaveRewardPointCreditsAsync(It.IsAny<List<RewardPointCredit>>()), Times.Never);
-            OrderServiceMock.Verify(x => x.Log(OrderNumber, It.Is<string>(y => y.Contains("First-time Order credit awarded"))), Times.Never);
-            OrderServiceMock.Verify(x => x.Log(OrderNumber, It.Is<string>(y => y.Contains("First-time Item credit awarded"))), Times.Once);
+            OrderServiceMock.Verify(x => x.Log(OrderNumber, It.Is<string>(y => y.Contains("points awarded from item"))), Times.Once);
         }
 
         [Test]
@@ -603,8 +601,7 @@ namespace WebExtensionTests.Services.RewardPoints
             // Assert
             RewardPointRepositoryMock.Verify(x => x.SaveRewardPointCreditAsync(It.IsAny<RewardPointCredit>()), Times.Never);
             RewardPointRepositoryMock.Verify(x => x.SaveRewardPointCreditsAsync(It.IsAny<List<RewardPointCredit>>()), Times.Once);
-            OrderServiceMock.Verify(x => x.Log(OrderNumber, It.Is<string>(y => y.Contains("First-time Order credit awarded"))), Times.Once);
-            OrderServiceMock.Verify(x => x.Log(OrderNumber, It.Is<string>(y => y.Contains("First-time Item credit awarded"))), Times.Once);
+            OrderServiceMock.Verify(x => x.Log(OrderNumber, It.Is<string>(y => y.Contains("points awarded from item"))), Times.Once);
         }
     }
 }

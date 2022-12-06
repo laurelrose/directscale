@@ -139,11 +139,12 @@ namespace WebExtension.Services.RewardPoints
 
                 var awardedOrderItemIds = new HashSet<int>();
                 var rewardPointCredits = new List<RewardPointCredit>();
+                var orderLogMessage = new List<string>();
                 if (TryGetFirstTimeOrderCredits(order, out var orderCreditMap))
                 {
                     foreach (var orderLineItem in order.LineItems)
                     {
-                        if (orderCreditMap.TryGetValue(orderLineItem.ItemId, out var orderCredit))
+                        if (orderCreditMap.TryGetValue(orderLineItem.ItemId, out var orderCredit) && orderCredit > 0)
                         {
                             rewardPointCredits.Add(new RewardPointCredit
                             {
@@ -161,6 +162,7 @@ namespace WebExtension.Services.RewardPoints
                             });
 
                             awardedOrderItemIds.Add(orderLineItem.ItemId);
+                            orderLogMessage.Add($"{orderCredit:N} {RewardPointCreditType.FirstTimeOrderPurchase} points awarded from item '{orderLineItem.SKU}'");
                         }
                     }
                 }
@@ -170,7 +172,7 @@ namespace WebExtension.Services.RewardPoints
                 {
                     foreach (var orderLineItem in order.LineItems)
                     {
-                        if (itemCreditMap.TryGetValue(orderLineItem.ItemId, out var itemCredit))
+                        if (itemCreditMap.TryGetValue(orderLineItem.ItemId, out var itemCredit) && itemCredit > 0)
                         {
                             rewardPointCredits.Add(new RewardPointCredit
                             {
@@ -188,6 +190,7 @@ namespace WebExtension.Services.RewardPoints
                             });
 
                             awardedItemItemIds.Add(orderLineItem.ItemId);
+                            orderLogMessage.Add($"{itemCredit:N} {RewardPointCreditType.FirstTimeItemPurchase} points awarded from item '{orderLineItem.SKU}'");
                         }
                     }
                 }
@@ -202,14 +205,9 @@ namespace WebExtension.Services.RewardPoints
                         break;
                 }
 
-                if (awardedOrderItemIds.Any())
+                if (orderLogMessage.Any())
                 {
-                    await _orderService.Log(order.OrderNumber, $"RewardPoint Credits: First-time Order credit awarded for the following item(s): {string.Join(", ", awardedOrderItemIds.ToArray())}.");
-                }
-
-                if (awardedItemItemIds.Any())
-                {
-                    await _orderService.Log(order.OrderNumber, $"RewardPoint Credits: First-time Item credit awarded for the following item(s): {string.Join(", ", awardedItemItemIds.ToArray())}.");
+                    await _orderService.Log(order.OrderNumber, $"RewardPoint Credits: {string.Join(", ", orderLogMessage.ToArray())}.");
                 }
             }
             catch (Exception e)
