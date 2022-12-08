@@ -262,7 +262,7 @@ namespace WebExtension.Services.RewardPoints
         private bool TryGetFirstTimeOrderCredits(Order order, out Dictionary<int, double> orderCreditMap)
         {
             bool isFirstTimeOrder;
-            if ("TRUE".Equals(order.Custom.Field1, StringComparison.OrdinalIgnoreCase) || _rewardPointRepository.GetFirstTimeOrderPurchaseCount(order.AssociateId) > 0)
+            if ("TRUE".Equals(order.Custom.Field1, StringComparison.OrdinalIgnoreCase) || _rewardPointRepository.GetFirstTimeOrderPurchaseCount(order.AssociateId) > 1)
             {
                 orderCreditMap = new Dictionary<int, double>();
                 isFirstTimeOrder = false;
