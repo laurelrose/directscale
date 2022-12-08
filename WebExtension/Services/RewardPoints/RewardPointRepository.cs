@@ -125,19 +125,6 @@ HAVING COUNT([OrderItemId]) > 0;";
 
         public int GetFirstTimeOrderPurchaseCount(int orderAssociateId)
         {
-            // TODO waiting to hear back from Dave on this
-            // TODO Need top update parameters if this is the one to use
-//            const string sql =
-//@"SELECT COUNT(R.[OrderNumber])
-//FROM [Client].[RewardPointCredits] R
-//WHERE R.CreditType = @CreditType AND R.[OrderAssociateId] = @AssociateId
-//    AND NOT EXISTS (
-//        SELECT 1
-//        FROM [dbo].[ORD_CustomFields] C
-//        WHERE C.[OrderNumber] = R.[OrderNumber]
-//            AND C.[Field1] = 'TRUE'
-//    );";
-
             const string sql =
 @"SELECT COUNT(O.[recordnumber])
 FROM [dbo].[ORD_Order] O
