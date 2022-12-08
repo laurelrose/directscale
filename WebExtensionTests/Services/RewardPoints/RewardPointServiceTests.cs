@@ -20,6 +20,7 @@ namespace WebExtensionTests.Services.RewardPoints
         protected Mock<IRewardPointRepository> RewardPointRepositoryMock;
         protected Mock<IRewardPointsService> RewardPointsServiceMock;
         protected Mock<IStatsService> StatsServiceMock;
+        protected Mock<ITreeService> TreeServiceMock;
 
         protected RewardPointService RewardPointService;
 
@@ -31,13 +32,15 @@ namespace WebExtensionTests.Services.RewardPoints
             RewardPointRepositoryMock = new Mock<IRewardPointRepository>();
             RewardPointsServiceMock = new Mock<IRewardPointsService>();
             StatsServiceMock = new Mock<IStatsService>();
+            TreeServiceMock = new Mock<ITreeService>();
 
             RewardPointService = new RewardPointService(
                 CustomLogServiceMock.Object,
                 OrderServiceMock.Object,
                 RewardPointRepositoryMock.Object,
                 RewardPointsServiceMock.Object,
-                StatsServiceMock.Object
+                StatsServiceMock.Object,
+                TreeServiceMock.Object
             );
         }
     }
@@ -378,7 +381,7 @@ namespace WebExtensionTests.Services.RewardPoints
                 .ReturnsAsync(_order);
 
             RewardPointRepositoryMock
-                .Setup(x => x.GetRepAssociateIdAsync(It.IsAny<int>()))
+                .Setup(x => x.GetRepAssociateIdAsync(It.IsAny<NodeDetail[]>()))
                 .ReturnsAsync(AwardedAssociateId);
 
             RewardPointRepositoryMock
@@ -426,7 +429,7 @@ namespace WebExtensionTests.Services.RewardPoints
             const string error = "There was an order error!";
 
             RewardPointRepositoryMock
-                .Setup(x => x.GetRepAssociateIdAsync(It.IsAny<int>()))
+                .Setup(x => x.GetRepAssociateIdAsync(It.IsAny<NodeDetail[]>()))
                 .ThrowsAsync(new Exception(error));
 
             // Act
@@ -442,7 +445,7 @@ namespace WebExtensionTests.Services.RewardPoints
         {
             // Arrange
             RewardPointRepositoryMock
-                .Setup(x => x.GetRepAssociateIdAsync(It.IsAny<int>()))
+                .Setup(x => x.GetRepAssociateIdAsync(It.IsAny<NodeDetail[]>()))
                 .ReturnsAsync(OrderAssociateId);
 
             // Act
