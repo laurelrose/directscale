@@ -1,4 +1,5 @@
 ﻿using Dapper;
+using DirectScale.Disco.Extension;
 using DirectScale.Disco.Extension.Services;
 using System;
 using System.Collections.Generic;
@@ -17,7 +18,7 @@ namespace WebExtension.Services.RewardPoints
         Dictionary<int, double> GetFirstTimeOrderCredits(HashSet<int> itemIds);
         HashSet<int> GetFirstTimeItemPurchases(int orderAssociateId, HashSet<int> itemIds);
         int GetFirstTimeOrderPurchaseCount(int orderAssociateId);
-        Task<int> GetRepAssociateIdAsync(int orderAssociateId);
+        Task<int> GetRepAssociateIdAsync(NodeDetail[] nodeDetails);
         Task<Dictionary<int, List<RewardPointCredit>>> GetAssociateRewardPointCredits(DateTime beginDate, DateTime endDate);
         Task SaveRewardPointCreditAsync(RewardPointCredit rewardPointCredit);
         Task SaveRewardPointCreditsAsync(List<RewardPointCredit> rewardPointCredits);
@@ -124,26 +125,45 @@ HAVING COUNT([OrderItemId]) > 0;";
 
         public int GetFirstTimeOrderPurchaseCount(int orderAssociateId)
         {
+            // TODO waiting to hear back from Dave on this
+            // TODO Need top update parameters if this is the one to use
+//            const string sql =
+//@"SELECT COUNT(R.[OrderNumber])
+//FROM [Client].[RewardPointCredits] R
+//WHERE R.CreditType = @CreditType AND R.[OrderAssociateId] = @AssociateId
+//    AND NOT EXISTS (
+//        SELECT 1
+//        FROM [dbo].[ORD_CustomFields] C
+//        WHERE C.[OrderNumber] = R.[OrderNumber]
+//            AND C.[Field1] = 'TRUE'
+//    );";
+
             const string sql =
 @"SELECT COUNT(O.[recordnumber])
 FROM [dbo].[ORD_Order] O
-LEFT JOIN [dbo].[ORD_CustomFields] C ON C.[OrderNumber] = O.[recordnumber] AND C.[Field1] <> 'TRUE'
-WHERE O.[DistributorID] = @AssociateId;";
+WHERE O.[DistributorID] = @AssociateId
+    AND NOT EXISTS (
+        SELECT 1
+        FROM [dbo].[ORD_CustomFields] C
+        WHERE C.[OrderNumber] = O.[recordnumber]
+            AND C.[Field1] = 'TRUE'
+    );";
 
             using var dbConnection = new SqlConnection(_dataService.GetClientConnectionString().ConfigureAwait(false).GetAwaiter().GetResult());
             return dbConnection.QueryFirstOrDefault<int>(sql, new { AssociateId = orderAssociateId });
         }
 
-        public async Task<int> GetRepAssociateIdAsync(int orderAssociateId)
+        public async Task<int> GetRepAssociateIdAsync(NodeDetail[] nodeDetails)
         {
             const string sql =
-@"SELECT TOP 1 E.[AssociateID]
-FROM RPT_GetEnrollmentUpline(@AssociateId) E
-JOIN CRM_Distributors D ON E.[AssociateID] = D.[recordnumber]
-WHERE D.[AssociateType] = 1;";
+@"SELECT TOP 1 D.[recordnumber]
+FROM CRM_Distributors D
+JOIN @UplineIds TVP ON TVP.[AssociateId] = D.[recordnumber]
+WHERE D.[AssociateType] = 1
+ORDER BY TVP.[Level] ASC;";
 
             await using var dbConnection = new SqlConnection(await _dataService.GetClientConnectionString());
-            return await dbConnection.QueryFirstOrDefaultAsync<int>(sql, new { AssociateId = orderAssociateId });
+            return await dbConnection.QueryFirstOrDefaultAsync<int>(sql, new { UplineIds = CreateNodeDetailsTvp(nodeDetails) });
         }
 
         public async Task SaveRewardPointCreditAsync(RewardPointCredit rewardPointCredit)
@@ -307,6 +327,27 @@ WHERE ([OrderCommissionDate] > @BeginDate AND [OrderCommissionDate] <= @EndDate 
             }
 
             return dataTable.AsTableValuedParameter("[Client].[RewardPointCredits_Update]");
+        }
+
+        private static SqlMapper.ICustomQueryParameter CreateNodeDetailsTvp(NodeDetail[] nodeDetails)
+        {
+            var dataTable = new DataTable();
+            dataTable.Columns.Add(new DataColumn("AssociateId", typeof(int)));
+            dataTable.Columns.Add(new DataColumn("Level", typeof(int)));
+
+            if (nodeDetails != null && nodeDetails.Any())
+            {
+                foreach (var nodeDetail in nodeDetails)
+                {
+                    var row = dataTable.NewRow();
+                    row["AssociateId"] = nodeDetail.NodeId.AssociateId;
+                    row["Level"] = nodeDetail.Level;
+
+                    dataTable.Rows.Add(row);
+                }
+            }
+
+            return dataTable.AsTableValuedParameter("[Client].[AssociateUplineInfo]");
         }
     }
 }

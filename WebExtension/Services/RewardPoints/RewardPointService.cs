@@ -29,13 +29,15 @@ namespace WebExtension.Services.RewardPoints
         private readonly IRewardPointRepository _rewardPointRepository;
         private readonly IRewardPointsService _rewardPointsService;
         private readonly IStatsService _statsService;
+        private readonly ITreeService _treeService;
 
         public RewardPointService(
             ICustomLogService customLogService,
             IOrderService orderService,
             IRewardPointRepository rewardPointRepository,
             IRewardPointsService rewardPointsService,
-            IStatsService statsService
+            IStatsService statsService,
+            ITreeService treeService
         )
         {
             _customLogService = customLogService ?? throw new ArgumentNullException(nameof(customLogService));
@@ -43,6 +45,7 @@ namespace WebExtension.Services.RewardPoints
             _rewardPointRepository = rewardPointRepository ?? throw new ArgumentNullException(nameof(rewardPointRepository));
             _rewardPointsService = rewardPointsService ?? throw new ArgumentNullException(nameof(rewardPointsService));
             _statsService = statsService ?? throw new ArgumentNullException(nameof(statsService));
+            _treeService = treeService ?? throw new ArgumentNullException(nameof(treeService));
         }
 
         public async Task AwardRewardPointCreditsAsync(int? comPeriodId = null)
@@ -223,7 +226,8 @@ namespace WebExtension.Services.RewardPoints
 
         private async Task<int> GetRepAssociateIdAsync(int orderAssociateId)
         {
-            var repId = await _rewardPointRepository.GetRepAssociateIdAsync(orderAssociateId);
+            var nodeDetails = await _treeService.GetUplineIds(new NodeId(orderAssociateId), TreeType.Enrollment);
+            var repId = await _rewardPointRepository.GetRepAssociateIdAsync(nodeDetails);
             if (repId < 1)
             {
                 throw new Exception($"Unable to find a Rep in upline for Order Associate {orderAssociateId}");
