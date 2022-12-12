@@ -102,11 +102,15 @@ BEGIN
 		[PayoutStatus] INT NOT NULL,
 		[CommissionPeriodId] INT
 	);
+
+	CREATE TYPE [Client].[AssociateUplineInfo] AS TABLE
+	(
+		[AssociateId] INT,
+		[Level] INT
+	);
 END;";
-            await using (var dbConnection = new SqlConnection(await _dataService.GetClientConnectionString()))
-            {
-                await dbConnection.ExecuteAsync(createStatement);
-            }
+            await using var dbConnection = new SqlConnection(await _dataService.GetClientConnectionString());
+            await dbConnection.ExecuteAsync(createStatement);
         }
     }
 }
