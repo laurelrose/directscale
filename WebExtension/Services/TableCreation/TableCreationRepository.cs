@@ -103,7 +103,7 @@ BEGIN
 		[CommissionPeriodId] INT
 	);
 
-	CREATE TYPE [dbo].[AssociateUplineInfo] AS TABLE
+	CREATE TYPE [Client].[AssociateUplineInfo] AS TABLE
 	(
 		[AssociateId] INT,
 		[Level] INT
