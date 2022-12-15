@@ -11,6 +11,7 @@ namespace WebExtension.Services.RewardPoints.Models
         public string OrderAssociateName { get; set; }
         public int OrderItemId { get; set; }
         public string OrderItemSku { get; set; }
+        public double OrderItemQty { get; set; }
         public string OrderItemDescription { get; set; }
         public double OrderItemCredits { get; set; }
         public int AwardedAssociateId { get; set; }

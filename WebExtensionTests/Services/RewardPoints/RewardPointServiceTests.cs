@@ -1,5 +1,6 @@
 ﻿using DirectScale.Disco.Extension;
 using DirectScale.Disco.Extension.Services;
+using Microsoft.CodeAnalysis.Differencing;
 using Moq;
 using NUnit.Framework;
 using System;
@@ -358,9 +359,9 @@ namespace WebExtensionTests.Services.RewardPoints
                 OrderNumber = OrderNumber,
                 LineItems = new List<OrderLineItem>
                 {
-                    new() { ItemId = ItemId1 },
-                    new() { ItemId = ItemId2 },
-                    new() { ItemId = ItemId3 }
+                    new() { ItemId = ItemId1, Qty = 2 },
+                    new() { ItemId = ItemId2, Qty = 3 },
+                    new() { ItemId = ItemId3, Qty = 4 }
                 }
             };
 
@@ -500,7 +501,7 @@ namespace WebExtensionTests.Services.RewardPoints
 
             RewardPointRepositoryMock
                 .Setup(x => x.GetFirstTimeOrderPurchaseCount(It.IsAny<int>()))
-                .Returns(1);
+                .Returns(2);
 
             // Act
             await RewardPointService.SaveRewardPointCreditsAsync(OrderNumber);
@@ -516,7 +517,7 @@ namespace WebExtensionTests.Services.RewardPoints
             // Arrange
             RewardPointRepositoryMock
                 .Setup(x => x.GetFirstTimeItemPurchases(It.IsAny<int>(), It.IsAny<HashSet<int>>()))
-                .Returns(new HashSet<int> { ItemId1, ItemId3 });
+                .Returns(new HashSet<int> { ItemId1 });
 
             RewardPointRepositoryMock
                 .Setup(x => x.SaveRewardPointCreditsAsync(It.IsAny<List<RewardPointCredit>>()))
@@ -525,7 +526,7 @@ namespace WebExtensionTests.Services.RewardPoints
                     foreach (var credit in rwdCredits)
                     {
                         Assert.IsTrue(_firstTimeOrderCredits.TryGetValue(credit.OrderItemId, out var creditAmount));
-                        Assert.That(credit.OrderItemCredits, Is.EqualTo(creditAmount));
+                        Assert.That(credit.OrderItemCredits, Is.EqualTo(creditAmount * credit.OrderItemQty));
                     }
                 });
 
@@ -548,14 +549,14 @@ namespace WebExtensionTests.Services.RewardPoints
 
             RewardPointRepositoryMock
                 .Setup(x => x.GetFirstTimeOrderPurchaseCount(It.IsAny<int>()))
-                .Returns(1);
+                .Returns(2);
 
             RewardPointRepositoryMock
                 .Setup(x => x.SaveRewardPointCreditAsync(It.IsAny<RewardPointCredit>()))
-                .Callback((RewardPointCredit rwdCredit) =>
+                .Callback((RewardPointCredit credit) =>
                 {
-                    Assert.IsTrue(_firstTimeItemCredits.TryGetValue(rwdCredit.OrderItemId, out var creditAmount));
-                    Assert.That(rwdCredit.OrderItemCredits, Is.EqualTo(creditAmount));
+                    Assert.IsTrue(_firstTimeItemCredits.TryGetValue(credit.OrderItemId, out var creditAmount));
+                    Assert.That(credit.OrderItemCredits, Is.EqualTo(creditAmount * credit.OrderItemQty));
                 });
 
             // Act
@@ -581,16 +582,16 @@ namespace WebExtensionTests.Services.RewardPoints
                         {
                             case ItemId1:
                                 Assert.IsTrue(_firstTimeItemCredits.TryGetValue(credit.OrderItemId, out var item1Amount));
-                                Assert.That(credit.OrderItemCredits, Is.EqualTo(item1Amount));
+                                Assert.That(credit.OrderItemCredits, Is.EqualTo(item1Amount * credit.OrderItemQty));
                                 break;
                             case ItemId2:
                                 Assert.IsTrue(_firstTimeOrderCredits.TryGetValue(credit.OrderItemId, out var item2Amount));
-                                Assert.That(credit.OrderItemCredits, Is.EqualTo(item2Amount));
+                                Assert.That(credit.OrderItemCredits, Is.EqualTo(item2Amount * credit.OrderItemQty));
                                 break;
                             case ItemId3:
                                 // Item 3 has values for both order and item purchases. Order should trump item amounts.
                                 Assert.IsTrue(_firstTimeOrderCredits.TryGetValue(credit.OrderItemId, out var item3Amount));
-                                Assert.That(credit.OrderItemCredits, Is.EqualTo(item3Amount));
+                                Assert.That(credit.OrderItemCredits, Is.EqualTo(item3Amount * credit.OrderItemQty));
                                 break;
                             default:
                                 throw new Exception("Invalid item in list");

@@ -87,7 +87,7 @@ namespace WebExtension.Services.RewardPoints
                 {
                     try
                     {
-                        var descriptionString = $"Reward points earned from {rewardPointCredit.OrderAssociateName} Order {rewardPointCredit.OrderNumber}, Item {rewardPointCredit.OrderItemId} - '{rewardPointCredit.OrderItemDescription}'.";
+                        var descriptionString = $"Reward points earned from {rewardPointCredit.OrderAssociateName} Order {rewardPointCredit.OrderNumber}, Item {rewardPointCredit.OrderItemSku} - '{rewardPointCredit.OrderItemDescription}', Qty: {rewardPointCredit.OrderItemQty:N}.";
                         await _rewardPointsService.AddRewardPointsWithExpiration(
                             rewardPointCredit.AwardedAssociateId,
                             rewardPointCredit.OrderItemCredits,
@@ -148,6 +148,7 @@ namespace WebExtension.Services.RewardPoints
                     {
                         if (orderCreditMap.TryGetValue(orderLineItem.ItemId, out var orderCredit) && orderCredit > 0)
                         {
+                            var aggregateOrderCredit = orderCredit * orderLineItem.Qty;
                             rewardPointCredits.Add(new RewardPointCredit
                             {
                                 AwardedAssociateId = repAssociateId,
@@ -155,16 +156,17 @@ namespace WebExtension.Services.RewardPoints
                                 OrderAssociateId = order.AssociateId,
                                 OrderAssociateName = order.Name,
                                 OrderCommissionDate = order.CommissionDate,
-                                OrderItemCredits = orderCredit,
+                                OrderItemCredits = aggregateOrderCredit,
                                 OrderItemDescription = orderLineItem.ProductName,
                                 OrderItemId = orderLineItem.ItemId,
                                 OrderItemSku = orderLineItem.SKU,
+                                OrderItemQty = orderLineItem.Qty,
                                 OrderNumber = order.OrderNumber,
                                 PayoutStatus = PayoutStatus.Unpaid
                             });
 
                             awardedOrderItemIds.Add(orderLineItem.ItemId);
-                            orderLogMessage.Add($"{orderCredit:N} {RewardPointCreditType.FirstTimeOrderPurchase} points awarded from item '{orderLineItem.SKU}'");
+                            orderLogMessage.Add($"{aggregateOrderCredit:N} {RewardPointCreditType.FirstTimeOrderPurchase} points awarded from item '{orderLineItem.SKU}', qty {orderLineItem.Qty:N}");
                         }
                     }
                 }
@@ -176,6 +178,7 @@ namespace WebExtension.Services.RewardPoints
                     {
                         if (itemCreditMap.TryGetValue(orderLineItem.ItemId, out var itemCredit) && itemCredit > 0)
                         {
+                            var aggregateItemCredit = itemCredit * orderLineItem.Qty;
                             rewardPointCredits.Add(new RewardPointCredit
                             {
                                 AwardedAssociateId = repAssociateId,
@@ -183,16 +186,17 @@ namespace WebExtension.Services.RewardPoints
                                 OrderAssociateId = order.AssociateId,
                                 OrderAssociateName = order.Name,
                                 OrderCommissionDate = order.CommissionDate,
-                                OrderItemCredits = itemCredit,
+                                OrderItemCredits = aggregateItemCredit,
                                 OrderItemDescription = orderLineItem.ProductName,
                                 OrderItemId = orderLineItem.ItemId,
                                 OrderItemSku = orderLineItem.SKU,
+                                OrderItemQty = orderLineItem.Qty,
                                 OrderNumber = order.OrderNumber,
                                 PayoutStatus = PayoutStatus.Unpaid
                             });
 
                             awardedItemItemIds.Add(orderLineItem.ItemId);
-                            orderLogMessage.Add($"{itemCredit:N} {RewardPointCreditType.FirstTimeItemPurchase} points awarded from item '{orderLineItem.SKU}'");
+                            orderLogMessage.Add($"{aggregateItemCredit:N} {RewardPointCreditType.FirstTimeItemPurchase} points awarded from item '{orderLineItem.SKU}', qty {orderLineItem.Qty:N}");
                         }
                     }
                 }

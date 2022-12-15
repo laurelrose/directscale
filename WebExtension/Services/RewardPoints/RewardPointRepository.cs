@@ -84,7 +84,7 @@ WHERE I.[recordnumber] IN (@ItemIds);";
         public Dictionary<int, double> GetFirstTimeOrderCredits(HashSet<int> itemIds)
         {
             const string sql =
-                @"SELECT I.[recordnumber] AS ItemId, CAST(C.[Field1] AS FLOAT) AS FirstTimeOrderDiscount
+@"SELECT I.[recordnumber] AS ItemId, CAST(C.[Field1] AS FLOAT) AS FirstTimeOrderDiscount
 FROM [dbo].[INV_Inventory] I
 JOIN [dbo].[INV_CustomFields] C ON C.[ItemID] = I.[recordnumber] AND ISNULL(C.[Field1], '') != ''
 WHERE I.[recordnumber] IN (@ItemIds);";
@@ -156,8 +156,8 @@ ORDER BY TVP.[Level] ASC;";
         public async Task SaveRewardPointCreditAsync(RewardPointCredit rewardPointCredit)
         {
             var insertStatement =
-@"INSERT INTO [Client].[RewardPointCredits] ([last_modified], [OrderCommissionDate], [OrderNumber], [OrderAssociateId], [OrderAssociateName], [OrderItemId], [OrderItemSku], [OrderItemDescription], [OrderItemCredits], [CreditType], [AwardedAssociateId], [PayoutStatus])
-VALUES (@LastModified, @OrderCommissionDate, @OrderNumber, @OrderAssociateId, @OrderAssociateName, @OrderItemId, @OrderItemSku, @OrderItemDescription, @OrderItemCredits, @CreditType, @AwardedAssociateId, @PayoutStatus);";
+@"INSERT INTO [Client].[RewardPointCredits] ([last_modified], [OrderCommissionDate], [OrderNumber], [OrderAssociateId], [OrderAssociateName], [OrderItemId], [OrderItemSku], [OrderItemQty], [OrderItemDescription], [OrderItemCredits], [CreditType], [AwardedAssociateId], [PayoutStatus])
+VALUES (@LastModified, @OrderCommissionDate, @OrderNumber, @OrderAssociateId, @OrderAssociateName, @OrderItemId, @OrderItemSku, @OrderItemQty, @OrderItemDescription, @OrderItemCredits, @CreditType, @AwardedAssociateId, @PayoutStatus);";
 
             var parameters = new
             {
@@ -168,6 +168,7 @@ VALUES (@LastModified, @OrderCommissionDate, @OrderNumber, @OrderAssociateId, @O
                 OrderAssociateName = rewardPointCredit.OrderAssociateName,
                 OrderItemId = rewardPointCredit.OrderItemId,
                 OrderItemSku = rewardPointCredit.OrderItemSku,
+                OrderItemQty = rewardPointCredit.OrderItemQty,
                 OrderItemDescription = rewardPointCredit.OrderItemDescription,
                 OrderItemCredits = rewardPointCredit.OrderItemCredits,
                 CreditType = (int)rewardPointCredit.CreditType,
@@ -182,8 +183,8 @@ VALUES (@LastModified, @OrderCommissionDate, @OrderNumber, @OrderAssociateId, @O
         public async Task SaveRewardPointCreditsAsync(List<RewardPointCredit> rewardPointCredits)
         {
             var bulkInsertStatement =
-@"INSERT INTO [Client].[RewardPointCredits] ([last_modified], [OrderCommissionDate], [OrderNumber], [OrderAssociateId], [OrderAssociateName], [OrderItemId], [OrderItemSku], [OrderItemDescription], [OrderItemCredits], [CreditType], [AwardedAssociateId], [PayoutStatus])
-SELECT [last_modified], [OrderCommissionDate], [OrderNumber], [OrderAssociateId], [OrderAssociateName], [OrderItemId], [OrderItemSku], [OrderItemDescription], [OrderItemCredits], [CreditType], [AwardedAssociateId], [PayoutStatus]
+@"INSERT INTO [Client].[RewardPointCredits] ([last_modified], [OrderCommissionDate], [OrderNumber], [OrderAssociateId], [OrderAssociateName], [OrderItemId], [OrderItemSku], [OrderItemQty], [OrderItemDescription], [OrderItemCredits], [CreditType], [AwardedAssociateId], [PayoutStatus])
+SELECT [last_modified], [OrderCommissionDate], [OrderNumber], [OrderAssociateId], [OrderAssociateName], [OrderItemId], [OrderItemSku], [OrderItemQty], [OrderItemDescription], [OrderItemCredits], [CreditType], [AwardedAssociateId], [PayoutStatus]
 FROM @RewardPointCredits TVP;";
 
             await using var dbConnection = new SqlConnection(await _dataService.GetClientConnectionString());
@@ -212,6 +213,7 @@ JOIN @RewardPointCreditIds TVP ON TVP.[recordnumber] = R.[recordnumber];";
     ,[OrderAssociateName]
     ,[OrderItemId]
     ,[OrderItemSku]
+    ,[OrderItemQty]
     ,[OrderItemDescription]
     ,[OrderItemCredits]
     ,[CreditType]
@@ -256,6 +258,7 @@ WHERE ([OrderCommissionDate] > @BeginDate AND [OrderCommissionDate] <= @EndDate 
             dataTable.Columns.Add(new DataColumn("OrderAssociateName", typeof(string)));
             dataTable.Columns.Add(new DataColumn("OrderItemId", typeof(int)));
             dataTable.Columns.Add(new DataColumn("OrderItemSku", typeof(string)));
+            dataTable.Columns.Add(new DataColumn("OrderItemQty", typeof(double)));
             dataTable.Columns.Add(new DataColumn("OrderItemDescription", typeof(string)));
             dataTable.Columns.Add(new DataColumn("OrderItemCredits", typeof(double)));
             dataTable.Columns.Add(new DataColumn("CreditType", typeof(int)));
@@ -276,6 +279,7 @@ WHERE ([OrderCommissionDate] > @BeginDate AND [OrderCommissionDate] <= @EndDate 
                     row["OrderAssociateName"] = rewardPointCredit.OrderAssociateName;
                     row["OrderItemId"] = rewardPointCredit.OrderItemId;
                     row["OrderItemSku"] = rewardPointCredit.OrderItemSku;
+                    row["OrderItemQty"] = rewardPointCredit.OrderItemQty;
                     row["OrderItemDescription"] = rewardPointCredit.OrderItemDescription;
                     row["OrderItemCredits"] = rewardPointCredit.OrderItemCredits;
                     row["CreditType"] = (int)rewardPointCredit.CreditType;
