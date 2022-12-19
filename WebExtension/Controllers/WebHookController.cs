@@ -1,16 +1,10 @@
-﻿using DirectScale.Disco.Extension;
-using DirectScale.Disco.Extension.Services;
-using DirectScale.Disco.Extension.EventModels;
+﻿using DirectScale.Disco.Extension.EventModels;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Extensions.Options;
 using System;
 using System.Threading.Tasks;
 using WebExtension.Helper;
-using WebExtension.Helper.Interface;
-using WebExtension.Helper.Models;
 using WebExtension.Services;
-using System.Reflection;
-using WebExtension.WebHooks.Order;
+using WebExtension.Services.RewardPoints;
 
 namespace WebExtension.Controllers
 {
@@ -18,47 +12,66 @@ namespace WebExtension.Controllers
     [ApiController]
     public class WebHookController : ControllerBase
     {
-        [ViewData]
-        public string DSBaseUrl { get; set; }
-        //
+        public static string _className = nameof(WebHookController);
+
         private readonly ICustomLogService _customLogService;
-        private readonly ICreateOrderEventWebHook _createOrderEventWebHook;
-        public WebHookController(ICommonService commonService, ICustomLogService customLogService,
-            ICreateOrderEventWebHook createOrderEventWebHook
+        private readonly IRewardPointService _rewardPointService;
+
+        public WebHookController(
+            ICustomLogService customLogService,
+            IRewardPointService rewardPointService
         )
         {
-            //
             _customLogService = customLogService ?? throw new ArgumentException(nameof(customLogService));
-            _createOrderEventWebHook = createOrderEventWebHook ?? throw new ArgumentException(nameof(createOrderEventWebHook));
+            _rewardPointService = rewardPointService ?? throw new ArgumentException(nameof(rewardPointService));
         }
 
+        //[HttpPost]
+        //[Route("CreateOrderEvent")]
+        //public async Task<IActionResult> CreateOrderEvent([FromBody] CreateOrderEvent request)
+        //{
+        //    string methodName = CommonMethod.GetCurrentMethodName(MethodBase.GetCurrentMethod());
+        //    try
+        //    {
+        //        if (request != null)
+        //        {
+        //            await _customLogService.SaveLog(0, 0, methodName, "Info", "Web Hook Begin", "", "", $"{CommonMethod.Serialize(request)}", "");
+        //            await _createOrderEventWebHook.Fire(request);
+        //        }
+        //        else
+        //        {
+        //            await _customLogService.SaveLog(0, 0, methodName, "Error", "WebHook Request not in JSON Format", "", "", $"{CommonMethod.Serialize(request)}", "");
+        //        }
+
+        //        return new Responses().OkResult();
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        await LogErrorAsync(methodName, ex);
+        //        return new Responses().BadRequestResult(ex.Message);
+        //    }
+        //}
+
         [HttpPost]
-        [Route("CreateOrderEvent")]
-        public async Task<IActionResult> CreateOrderEvent([FromBody] CreateOrderEvent request)
+        [Route("DailyEvent")]
+        public async Task<IActionResult> DailyEvent([FromBody] DailyEvent request)
         {
-            string methodName = CommonMethod.GetCurrentMethodName(MethodBase.GetCurrentMethod());
             try
             {
-                if (request != null)
-                {
-                    await _customLogService.SaveLog(0, 0, methodName, "Info", "Web Hook Begin", "", "", $"{CommonMethod.Serialize(request)}", "");
-                    await _createOrderEventWebHook.Fire(request);
-                }
-                else
-                {
-                    await _customLogService.SaveLog(0, 0, methodName, "Error", "WebHook Request not in JSON Format", "", "", $"{CommonMethod.Serialize(request)}", "");
-                }
+                await _customLogService.SaveLog(0, 0, $"{_className}.DailyEvent", "Information", "DailyEvent Triggered", "", "", "", CommonMethod.Serialize(request));
+
+                await _rewardPointService.AwardRewardPointCreditsAsync();
 
                 return new Responses().OkResult();
             }
             catch (Exception ex)
             {
-                await LogError(methodName, ex);
-                return new Responses().BadRequestResult(ex.Message);
+                await LogErrorAsync($"{_className}.DailyEvent", ex);
+                return new Responses().ErrorResult(ex);
             }
         }
 
-        private async Task LogError(string methodName, Exception ex)
+        private async Task LogErrorAsync(string methodName, Exception ex)
         {
             await _customLogService.SaveLog(0, 0, methodName, "Error", ex.Message, "", "", "", CommonMethod.Serialize(ex));
         }
@@ -87,7 +100,7 @@ namespace WebExtension.Controllers
             }
             catch (Exception ex)
             {
-                await LogError(methodName, ex);
+                await LogErrorAsync(methodName, ex);
                 return new Responses().BadRequestResult(ex.Message);
             }
         }*/
