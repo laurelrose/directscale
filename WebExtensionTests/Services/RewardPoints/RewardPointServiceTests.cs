@@ -220,6 +220,31 @@ namespace WebExtensionTests.Services.RewardPoints
         }
 
         [Test]
+        public async Task RewardPointService_AwardRewardPointCreditsAsync_KpiExceptionThrown()
+        {
+            // Arrange
+            _commissionStats = new Dictionary<int, CommissionStats>
+            {
+                { AssociateId2, new CommissionStats { AssociateID = AssociateId2, Kpis = new Dictionary<string, Kpi> { { "ABC", new Kpi { IsBool = true, Value = 1 } } } } },
+                { AssociateId7, new CommissionStats { AssociateID = AssociateId7, Kpis = new Dictionary<string, Kpi> { { "ABC", new Kpi { IsBool = true, Value = 1 } } } } },
+                { AssociateId11, new CommissionStats { AssociateID = AssociateId11, Kpis = new Dictionary<string, Kpi> { { "ABC", new Kpi { IsBool = true, Value = 0 } } } } }
+            };
+
+            StatsServiceMock
+                .Setup(x => x.GetStats(It.IsAny<int[]>(), It.IsAny<DateTime>()))
+                .ReturnsAsync(_commissionStats);
+
+            // Act
+            await RewardPointService.AwardRewardPointCreditsAsync();
+
+            // Assert
+            RewardPointRepositoryMock.Verify(x => x.GetAssociateRewardPointCredits(It.IsAny<DateTime>(), It.IsAny<DateTime>()), Times.Once);
+            StatsServiceMock.Verify(x => x.GetStats(It.IsAny<int[]>(), It.IsAny<DateTime>()), Times.Once);
+            RewardPointsServiceMock.Verify(x => x.AddRewardPointsWithExpiration(It.IsAny<int>(), It.IsAny<double>(), It.IsAny<string>(), It.IsAny<DateTime>(), It.IsAny<DateTime>(), It.IsAny<int?>()), Times.Never);
+            CustomLogServiceMock.Verify(x => x.SaveLog(0, 0, It.IsAny<string>(), "Error", "KPI 'KIT' not found", It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>()), Times.Once);
+        }
+
+        [Test]
         public async Task RewardPointService_AwardRewardPointCreditsAsync_NullCommissionPeriodInfo()
         {
             // Arrange

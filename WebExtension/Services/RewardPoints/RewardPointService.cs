@@ -57,6 +57,8 @@ namespace WebExtension.Services.RewardPoints
                     throw new Exception("Unable to retrieve Commission Period Info");
                 }
 
+                // Business Requirement: The RWD credits payout shouldn't happen until one dat after the latest weekly commission period run.
+                // Here, we are checking to see if today's date is one dat after the Commit Date of the most-recent commission period.
                 var dateToExecute = commissionPeriodInfo.CommitDate.Date.AddDays(DaysBetweenCommitAndPayout);
                 if (DateTime.Today < dateToExecute.Date)
                 {
@@ -69,14 +71,26 @@ namespace WebExtension.Services.RewardPoints
                 var rewardPointCreditsToAdd = new List<RewardPointCredit>();
                 foreach (var kvp in rewardPointCreditsMap)
                 {
-                    if (associateStatsMap.TryGetValue(kvp.Key, out var associateStats)
-                        && associateStats != null
-                        && associateStats.Kpis["KIT"].Value > 0)
+                    if (associateStatsMap.TryGetValue(kvp.Key, out var associateStats) && associateStats != null)
                     {
-                        rewardPointCreditsToAdd.AddRange(kvp.Value);
+                        // Business Requirement: In order for RWD credits to be awarded, Reps need to be "KIT Qualified".
+                        // This means specifically that the "KIT" KPI needs to be set to true (1).
+                        if (associateStats.Kpis.TryGetValue("KIT", out var kpi) && kpi != null)
+                        {
+                            if (kpi.Value > 0)
+                            {
+                                rewardPointCreditsToAdd.AddRange(kvp.Value);
+                            }
+                        }
+                        else
+                        {
+                            // If the KPI isn't found, there is a larger problem, and we should throw an exception to end the process.
+                            throw new Exception("KPI 'KIT' not found");
+                        }
                     }
                 }
 
+                // Skip the rest of the code if there aren't any RWD credits to award.
                 if (!rewardPointCreditsToAdd.Any())
                 {
                     await _customLogService.SaveLog(0, 0, $"{_className}.AwardRewardPointCreditsAsync", "Information", "Terminating process - no Reward Point Credits to add.", "", "", "", "");
@@ -87,6 +101,10 @@ namespace WebExtension.Services.RewardPoints
                 {
                     try
                     {
+                        // Business Requirement: The description indicates several things:
+                        //    1. The Associate from whom the RWD credit was earned
+                        //    2. The Order Number
+                        //    3. The Item and quantity for which the credit was earned
                         var descriptionString = $"Reward points earned from {rewardPointCredit.OrderAssociateName} Order {rewardPointCredit.OrderNumber}, Item {rewardPointCredit.OrderItemSku} - '{rewardPointCredit.OrderItemDescription}', Qty: {rewardPointCredit.OrderItemQty:N}.";
                         await _rewardPointsService.AddRewardPointsWithExpiration(
                             rewardPointCredit.AwardedAssociateId,
@@ -104,6 +122,8 @@ namespace WebExtension.Services.RewardPoints
                     }
                     catch (Exception e)
                     {
+                        // Setting the PayoutStatus to "Error" if something went wrong.
+                        // This ensures that the next RWD credit run will pick these credits up and attempt to award them.
                         rewardPointCredit.PayoutStatus = PayoutStatus.Error;
                         await _orderService.Log(rewardPointCredit.OrderNumber, "Error awarding RewardPoint Credits. Check custom logs for details.");
                         await _customLogService.SaveLog(rewardPointCredit.AwardedAssociateId, rewardPointCredit.OrderNumber, $"{_className}.AwardRewardPointCreditsAsync", "Payout Error", e.Message, "", "", "", CommonMethod.Serialize(e));
@@ -132,6 +152,8 @@ namespace WebExtension.Services.RewardPoints
             try
             {
                 order = await _orderService.GetOrderByOrderNumber(orderNumber);
+
+                // Business Requirement: Reps cannot earn points for their own orders, so skip this process if that's the case.
                 var repAssociateId = await GetRepAssociateIdAsync(order.AssociateId);
                 if (order.AssociateId == repAssociateId)
                 {
@@ -171,7 +193,6 @@ namespace WebExtension.Services.RewardPoints
                     }
                 }
 
-                var awardedItemItemIds = new HashSet<int>();
                 if (TryGetFirstTimeItemCredits(order, awardedOrderItemIds, out var itemCreditMap))
                 {
                     foreach (var orderLineItem in order.LineItems)
@@ -195,7 +216,6 @@ namespace WebExtension.Services.RewardPoints
                                 PayoutStatus = PayoutStatus.Unpaid
                             });
 
-                            awardedItemItemIds.Add(orderLineItem.ItemId);
                             orderLogMessage.Add($"{aggregateItemCredit:N} {RewardPointCreditType.FirstTimeItemPurchase} points awarded from item '{orderLineItem.SKU}', qty {orderLineItem.Qty:N}");
                         }
                     }
@@ -242,6 +262,9 @@ namespace WebExtension.Services.RewardPoints
         private bool TryGetFirstTimeItemCredits(Order order, HashSet<int> awardedOrderItemIds, out Dictionary<int, double> itemCreditMap)
         {
             bool hasFirstTimeItems;
+
+            // Business Requirement: If Field1 of the Order's CustomFields is set to "true" or some variation of it, then this indicates an order that was already received.
+            // RWD credits do not apply to such orders.
             if ("TRUE".Equals(order.Custom.Field1, StringComparison.OrdinalIgnoreCase))
             {
                 itemCreditMap = new Dictionary<int, double>();
@@ -252,6 +275,8 @@ namespace WebExtension.Services.RewardPoints
                 var itemIds = new HashSet<int>(order.LineItems.Select(x => x.ItemId));
                 itemIds.ExceptWith(awardedOrderItemIds);
 
+                // Business Requirement: If the given Associate has already placed an order for the item in question, the First-time Item promotion has already been achieved.
+                // An Associate can only achieve a First-time Item once for any given item.
                 var itemsIdsAlreadyDiscounted = _rewardPointRepository.GetFirstTimeItemPurchases(order.AssociateId, itemIds);
                 itemIds.ExceptWith(itemsIdsAlreadyDiscounted);
 
@@ -265,6 +290,12 @@ namespace WebExtension.Services.RewardPoints
         private bool TryGetFirstTimeOrderCredits(Order order, out Dictionary<int, double> orderCreditMap)
         {
             bool isFirstTimeOrder;
+
+            // Business Requirement: If Field1 of the Order's CustomFields is set to "true" or some variation of it, then this indicates an order that was already received.
+            // RWD credits do not apply to such orders.
+            //
+            // Business Requirement: If the given Associate has already placed an order, the First-time Order promotion has already been achieved.
+            // An Associate can only achieve a First-time Order once.
             if ("TRUE".Equals(order.Custom.Field1, StringComparison.OrdinalIgnoreCase) || _rewardPointRepository.GetFirstTimeOrderPurchaseCount(order.AssociateId) > 1)
             {
                 orderCreditMap = new Dictionary<int, double>();
