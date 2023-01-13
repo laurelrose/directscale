@@ -1206,20 +1206,20 @@ namespace WebExtension.Services.ZiplingoEngagementService
                         assoObj.CompanyName = settings.CompanyName;
 
                         var strData = JsonConvert.SerializeObject(assoObj);
-                        ZiplingoEngagementRequest request = new ZiplingoEngagementRequest { associateid = info.AssociateId, companyname = settings.CompanyName, eventKey = "UpcommingExpiryCard", data = strData };
+                        ZiplingoEngagementRequest request = new ZiplingoEngagementRequest { associateid = info.AssociateId, companyname = settings.CompanyName, eventKey = "UpcomingExpiryCard", data = strData };
                         var jsonReq = JsonConvert.SerializeObject(request);
                         CallZiplingoEngagementApi(jsonReq, "Campaign/ExecuteTrigger");
                     }
                     catch (Exception ex)
                     {
-                        _customLogRepository.CustomErrorLog(0, 0, "Error with in UpcommingExpiryCard", ex.Message);
+                        _customLogRepository.CustomErrorLog(0, 0, "Error with in UpcomingExpiryCard", ex.Message);
                     }
                 }
 
             }
             catch (Exception e)
             {
-                _customLogRepository.CustomErrorLog(0, 0, "Error with in UpcommingExpiryCard", e.Message);
+                _customLogRepository.CustomErrorLog(0, 0, "Error with in UpcomingExpiryCard", e.Message);
             }
         }
 
