@@ -62,14 +62,13 @@ namespace WebExtension.Controllers
         {
             try
             {
-                using (var @lock = await _distributedLockingService.CreateDistributedLockAsync("LaurelRose_AwardRewardPointCredits", TimeSpan.FromSeconds(30)))
+                using (var @lock = await _distributedLockingService.CreateDistributedLockAsync("LaurelRose_AwardRewardPointCredits"))
                 {
-                    await _customLogService.SaveLog(0, 0, $"{_className}.DailyEvent", "Information", "DailyEvent Triggered", "", "", "", CommonMethod.Serialize(request));
-
                     // If the lock is null, that means something else is using it.
                     // If it's already in use, ignore the request.
                     if (@lock != null)
                     {
+                        await _customLogService.SaveLog(0, 0, $"{_className}.DailyEvent", "Information", "DailyEvent Triggered", "", "", "", CommonMethod.Serialize(request));
                         await _rewardPointService.AwardRewardPointCreditsAsync();
                     }
                 }

@@ -21,7 +21,10 @@ namespace WebExtension.Services.DistributedLocking
 
         public async Task<IDisposable> CreateDistributedLockAsync(string lockName, TimeSpan? timeSpan = null)
         {
-            timeSpan ??= TimeSpan.FromSeconds(10);
+            if (timeSpan is null)
+            {
+                return await new SqlDistributedLock(lockName, await _dataService.GetClientConnectionString()).TryAcquireAsync();
+            }
 
             return await new SqlDistributedLock(lockName, await _dataService.GetClientConnectionString()).TryAcquireAsync(timeSpan.Value);
         }
