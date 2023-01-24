@@ -68,6 +68,7 @@ namespace WebExtension.Controllers
                     // If it's already in use, ignore the request.
                     if (@lock != null)
                     {
+                        await Task.Delay(10000);
                         await _customLogService.SaveLog(0, 0, $"{_className}.DailyEvent", "Information", "DailyEvent Triggered", "", "", "", CommonMethod.Serialize(request));
                         await _rewardPointService.AwardRewardPointCreditsAsync();
                     }
