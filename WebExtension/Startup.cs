@@ -16,6 +16,7 @@ using WebExtension.Hooks.Order;
 using WebExtension.Repositories;
 using WebExtension.Services;
 using WebExtension.Services.DailyRun;
+using WebExtension.Services.DistributedLocking;
 using WebExtension.Services.RewardPoints;
 using WebExtension.Services.TableCreation;
 using WebExtension.Services.ZiplingoEngagementService;
@@ -78,6 +79,7 @@ namespace WebExtension
             services.AddSingleton<IZiplingoEngagementService, ZiplingoEngagementService>();
             services.AddSingleton<ITableCreationService, TableCreationService>();
             services.AddSingleton<IRewardPointService, RewardPointService>();
+            services.AddSingleton<IDistributedLockingService, DistributedLockingService>();
 
             //DS
             services.AddDirectScale(c =>
