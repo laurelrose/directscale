@@ -13,11 +13,13 @@ namespace WebExtension.Hooks.Autoship
     {
         private readonly IZiplingoEngagementService _ziplingoEngagementService;
         private readonly IAssociateService _associateService;
+        private readonly IAutoshipService _autoshipService;
 
-        public CreateAutoshipHook(IZiplingoEngagementService ziplingoEngagementService, IAssociateService associateService)
+        public CreateAutoshipHook(IZiplingoEngagementService ziplingoEngagementService, IAssociateService associateService, IAutoshipService autoshipService)
         {
             _ziplingoEngagementService = ziplingoEngagementService ?? throw new ArgumentNullException(nameof(ziplingoEngagementService));
             _associateService = associateService ?? throw new ArgumentNullException(nameof(associateService));
+            _autoshipService = autoshipService ?? throw new ArgumentNullException(nameof(autoshipService));
         }
         public async Task<CreateAutoshipHookResponse> Invoke(CreateAutoshipHookRequest request, Func<CreateAutoshipHookRequest, Task<CreateAutoshipHookResponse>> func)
         {
@@ -25,8 +27,9 @@ namespace WebExtension.Hooks.Autoship
 
             try 
             {
-                _ziplingoEngagementService.CreateAutoshipTrigger(request.AutoshipInfo);
-                var associateSummary = await _associateService.GetAssociate(request.AutoshipInfo.AssociateId);
+                var autoshipInfo = await _autoshipService.GetAutoship(response.AutoshipId);
+                _ziplingoEngagementService.CreateAutoshipTrigger(autoshipInfo);
+                var associateSummary = await _associateService.GetAssociate(autoshipInfo.AssociateId);
                 _ziplingoEngagementService.UpdateContact(associateSummary);
             }
             catch(Exception ex)
