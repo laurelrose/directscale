@@ -37,6 +37,7 @@ namespace WebExtension.Services.ZiplingoEngagementService
         void SentNotificationOnServiceExpiryBefore2Weeks();
         void CreateAutoshipTrigger(Autoship autoshipInfo);
         void AssociateStatusSync(List<GetAssociateStatusModel> associateStatuses);
+        void UpdateAutoshipTrigger(Autoship updatedAutoshipInfo);
     }
     public class ZiplingoEngagementService : IZiplingoEngagementService
     {
@@ -1458,6 +1459,46 @@ namespace WebExtension.Services.ZiplingoEngagementService
             catch (Exception e)
             {
                 _customLogRepository.CustomErrorLog(0, 0, "Exception occured in attempting CreateAutoshipTrigger", e.Message);
+            }
+        }
+
+        public void UpdateAutoshipTrigger(Autoship updatedAutoshipInfo)
+        {
+            try
+            {
+                var company = _companyService.GetCompany();
+                var settings = _ZiplingoEngagementRepository.GetSettings();
+
+                AutoshipInfoMap req = new AutoshipInfoMap();
+
+                req.AssociateId = updatedAutoshipInfo.AssociateId;
+                req.AutoshipId = updatedAutoshipInfo.AutoshipId;
+                req.AutoshipType = updatedAutoshipInfo.AutoshipType.ToString();
+                req.CurrencyCode = updatedAutoshipInfo.CurrencyCode;
+                req.Custom = updatedAutoshipInfo.Custom;
+                req.Frequency = updatedAutoshipInfo.Frequency.ToString();
+                req.FrequencyString = updatedAutoshipInfo.FrequencyString;
+                req.LastChargeAmount = updatedAutoshipInfo.LastChargeAmount;
+                req.LastProcessDate = updatedAutoshipInfo.LastProcessDate;
+                req.LineItems = updatedAutoshipInfo.LineItems;
+                req.NextProcessDate = updatedAutoshipInfo.NextProcessDate;
+                req.PaymentMerchantId = updatedAutoshipInfo.PaymentMerchantId;
+                req.PaymentMethodId = updatedAutoshipInfo.PaymentMethodId;
+                req.ShipAddress = updatedAutoshipInfo.ShipAddress;
+                req.ShipMethodId = updatedAutoshipInfo.ShipMethodId;
+                req.StartDate = updatedAutoshipInfo.StartDate;
+                req.Status = updatedAutoshipInfo.Status;
+                req.SubTotal = updatedAutoshipInfo.SubTotal;
+                req.TotalCV = updatedAutoshipInfo.TotalCV;
+                req.TotalQV = updatedAutoshipInfo.TotalQV;
+
+                var strData = JsonConvert.SerializeObject(req);
+                ZiplingoEngagementRequest request = new ZiplingoEngagementRequest { associateid = updatedAutoshipInfo.AssociateId, companyname = settings.CompanyName, eventKey = "AutoshipChanged", data = strData };
+                var jsonReq = JsonConvert.SerializeObject(request);
+                CallZiplingoEngagementApi(jsonReq, "Campaign/ExecuteTrigger");
+            }
+            catch (Exception ex)
+            {
             }
         }
 
