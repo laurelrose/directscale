@@ -41,14 +41,14 @@ namespace WebExtensionTests.Controllers
         {
             // Arrange
             _distributedLockingServiceMock
-                .Setup(x => x.CreateDistributedLockAsync(It.IsAny<string>(), It.IsAny<TimeSpan>()))
+                .Setup(x => x.CreateDistributedLockAsync(It.IsAny<string>(), null))
                 .ReturnsAsync((MockSqlDistributedLock)null);
 
             // Act
             await _webHookController.DailyEvent(new DailyEvent());
 
             // Assert
-            _distributedLockingServiceMock.Verify(x => x.CreateDistributedLockAsync(It.IsAny<string>(), It.IsAny<TimeSpan>()), Times.Once);
+            _distributedLockingServiceMock.Verify(x => x.CreateDistributedLockAsync(It.IsAny<string>(), null), Times.Once);
             _rewardPointServiceMock.Verify(x => x.AwardRewardPointCreditsAsync(It.IsAny<int?>()), Times.Never);
         }
 
@@ -57,14 +57,14 @@ namespace WebExtensionTests.Controllers
         {
             // Arrange
             _distributedLockingServiceMock
-                .Setup(x => x.CreateDistributedLockAsync(It.IsAny<string>(), It.IsAny<TimeSpan>()))
+                .Setup(x => x.CreateDistributedLockAsync(It.IsAny<string>(), null))
                 .ReturnsAsync(new MockSqlDistributedLock());
 
             // Act
             await _webHookController.DailyEvent(new DailyEvent());
 
             // Assert
-            _distributedLockingServiceMock.Verify(x => x.CreateDistributedLockAsync(It.IsAny<string>(), It.IsAny<TimeSpan>()), Times.Once);
+            _distributedLockingServiceMock.Verify(x => x.CreateDistributedLockAsync(It.IsAny<string>(), null), Times.Once);
             _rewardPointServiceMock.Verify(x => x.AwardRewardPointCreditsAsync(It.IsAny<int?>()), Times.Once);
         }
 

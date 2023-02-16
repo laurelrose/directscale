@@ -153,14 +153,9 @@ namespace WebExtension.Services.RewardPoints
             {
                 order = await _orderService.GetOrderByOrderNumber(orderNumber);
 
-                // Business Requirement: Reps cannot earn points for their own orders, so skip this process if that's the case.
+                // Business Requirement: The associate's enroller (whether a Customer or a Rep) will be the one receiving the reward points for the order.
                 var repAssociateId = await GetRepAssociateIdAsync(order.AssociateId);
-                if (order.AssociateId == repAssociateId)
-                {
-                    await _orderService.Log(order.OrderNumber, "RewardPoint Credits: No points awarded. A Rep cannot earn points for their own order.");
-                    return;
-                }
-
+                
                 var awardedOrderItemIds = new HashSet<int>();
                 var rewardPointCredits = new List<RewardPointCredit>();
                 var orderLogMessage = new List<string>();
@@ -250,7 +245,7 @@ namespace WebExtension.Services.RewardPoints
         private async Task<int> GetRepAssociateIdAsync(int orderAssociateId)
         {
             var nodeDetails = await _treeService.GetUplineIds(new NodeId(orderAssociateId), TreeType.Enrollment);
-            var repId = await _rewardPointRepository.GetRepAssociateIdAsync(nodeDetails);
+            var repId = await _rewardPointRepository.GetRepAssociateIdAsync(nodeDetails, orderAssociateId);
             if (repId < 1)
             {
                 throw new Exception($"Unable to find a Rep in upline for Order Associate {orderAssociateId}");
@@ -272,13 +267,10 @@ namespace WebExtension.Services.RewardPoints
             }
             else
             {
+                // Business Requirement: It doesn't matter if the given Associate has already ordered the item in question.
+                // If the item has a first-time item credit, an Associate can get the reward as many times as they purchase the item.
                 var itemIds = new HashSet<int>(order.LineItems.Select(x => x.ItemId));
                 itemIds.ExceptWith(awardedOrderItemIds);
-
-                // Business Requirement: If the given Associate has already placed an order for the item in question, the First-time Item promotion has already been achieved.
-                // An Associate can only achieve a First-time Item once for any given item.
-                var itemsIdsAlreadyDiscounted = _rewardPointRepository.GetFirstTimeItemPurchases(order.AssociateId, itemIds);
-                itemIds.ExceptWith(itemsIdsAlreadyDiscounted);
 
                 itemCreditMap = _rewardPointRepository.GetFirstTimeItemCredits(itemIds);
                 hasFirstTimeItems = itemCreditMap.Any();
