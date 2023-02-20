@@ -16,9 +16,8 @@ namespace WebExtension.Services.RewardPoints
         Task<CommissionPeriodInfo> GetCurrentCommissionPeriodInfoAsync(int? comPeriodId);
         Dictionary<int, double> GetFirstTimeItemCredits(HashSet<int> itemIds);
         Dictionary<int, double> GetFirstTimeOrderCredits(HashSet<int> itemIds);
-        HashSet<int> GetFirstTimeItemPurchases(int orderAssociateId, HashSet<int> itemIds);
         int GetFirstTimeOrderPurchaseCount(int orderAssociateId);
-        Task<int> GetRepAssociateIdAsync(NodeDetail[] nodeDetails);
+        Task<int> GetRepAssociateIdAsync(NodeDetail[] nodeDetails, int orderAssociateId);
         Task<Dictionary<int, List<RewardPointCredit>>> GetAssociateRewardPointCredits(DateTime beginDate, DateTime endDate);
         Task SaveRewardPointCreditAsync(RewardPointCredit rewardPointCredit);
         Task SaveRewardPointCreditsAsync(List<RewardPointCredit> rewardPointCredits);
@@ -100,29 +99,6 @@ WHERE I.[recordnumber] IN (@ItemIds);";
             return orderDiscountsMap;
         }
 
-        public HashSet<int> GetFirstTimeItemPurchases(int orderAssociateId, HashSet<int> itemIds)
-        {
-            const string sql =
-@"SELECT [OrderItemId]
-FROM [Client].[RewardPointCredits]
-WHERE [OrderAssociateId] = @AssociateId
-    AND [CreditType] = @CreditType
-    AND [OrderItemId] IN (@ItemIds)
-GROUP BY [OrderItemId]
-HAVING COUNT([OrderItemId]) > 0;";
-
-            var parameters = new
-            {
-                AssociateId = orderAssociateId,
-                CreditType = (int)RewardPointCreditType.FirstTimeItemPurchase,
-                ItemIds = itemIds
-            };
-
-            using var dbConnection = new SqlConnection(_dataService.GetClientConnectionString().ConfigureAwait(false).GetAwaiter().GetResult());
-            var result = dbConnection.Query<int>(sql, parameters);
-            return new HashSet<int>(result);
-        }
-
         public int GetFirstTimeOrderPurchaseCount(int orderAssociateId)
         {
             const string sql =
@@ -140,17 +116,24 @@ WHERE O.[DistributorID] = @AssociateId
             return dbConnection.QueryFirstOrDefault<int>(sql, new { AssociateId = orderAssociateId });
         }
 
-        public async Task<int> GetRepAssociateIdAsync(NodeDetail[] nodeDetails)
+        public async Task<int> GetRepAssociateIdAsync(NodeDetail[] nodeDetails, int orderAssociateId)
         {
             const string sql =
 @"SELECT TOP 1 D.[recordnumber]
 FROM CRM_Distributors D
 JOIN @UplineIds TVP ON TVP.[AssociateId] = D.[recordnumber]
 WHERE D.[AssociateType] = 1
+    AND D.[recordnumber] != @AssociateId
 ORDER BY TVP.[Level] ASC;";
 
+            var parameters = new
+            {
+                AssociateId = orderAssociateId,
+                UplineIds = CreateNodeDetailsTvp(nodeDetails)
+            };
+
             await using var dbConnection = new SqlConnection(await _dataService.GetClientConnectionString());
-            return await dbConnection.QueryFirstOrDefaultAsync<int>(sql, new { UplineIds = CreateNodeDetailsTvp(nodeDetails) });
+            return await dbConnection.QueryFirstOrDefaultAsync<int>(sql, parameters);
         }
 
         public async Task SaveRewardPointCreditAsync(RewardPointCredit rewardPointCredit)

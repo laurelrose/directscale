@@ -407,12 +407,8 @@ namespace WebExtensionTests.Services.RewardPoints
                 .ReturnsAsync(_order);
 
             RewardPointRepositoryMock
-                .Setup(x => x.GetRepAssociateIdAsync(It.IsAny<NodeDetail[]>()))
+                .Setup(x => x.GetRepAssociateIdAsync(It.IsAny<NodeDetail[]>(), It.IsAny<int>()))
                 .ReturnsAsync(AwardedAssociateId);
-
-            RewardPointRepositoryMock
-                .Setup(x => x.GetFirstTimeItemPurchases(It.IsAny<int>(), It.IsAny<HashSet<int>>()))
-                .Returns(new HashSet<int>());
 
             RewardPointRepositoryMock
                 .Setup(x => x.GetFirstTimeOrderPurchaseCount(It.IsAny<int>()))
@@ -455,7 +451,7 @@ namespace WebExtensionTests.Services.RewardPoints
             const string error = "There was an order error!";
 
             RewardPointRepositoryMock
-                .Setup(x => x.GetRepAssociateIdAsync(It.IsAny<NodeDetail[]>()))
+                .Setup(x => x.GetRepAssociateIdAsync(It.IsAny<NodeDetail[]>(), It.IsAny<int>()))
                 .ThrowsAsync(new Exception(error));
 
             // Act
@@ -464,22 +460,6 @@ namespace WebExtensionTests.Services.RewardPoints
             // Assert
             OrderServiceMock.Verify(x => x.Log(OrderNumber, $"RewardPoint Credits: Error recording reward point credits: '{error}'. Please review Custom Logs."), Times.Once);
             CustomLogServiceMock.Verify(x => x.SaveLog(OrderAssociateId, OrderNumber, It.IsAny<string>(), "Error", error, It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>()), Times.Once);
-        }
-
-        [Test]
-        public async Task RewardPointService_SaveRewardPointCreditsAsync_OrderAssociateAndRepAreTheSameAssociate()
-        {
-            // Arrange
-            RewardPointRepositoryMock
-                .Setup(x => x.GetRepAssociateIdAsync(It.IsAny<NodeDetail[]>()))
-                .ReturnsAsync(OrderAssociateId);
-
-            // Act
-            await RewardPointService.SaveRewardPointCreditsAsync(OrderNumber);
-
-            // Assert
-            OrderServiceMock.Verify(x => x.Log(OrderNumber, "RewardPoint Credits: No points awarded. A Rep cannot earn points for their own order."), Times.Once);
-            CustomLogServiceMock.Verify(x => x.SaveLog(It.IsAny<int>(), It.IsAny<int>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>()), Times.Never);
         }
 
         [Test]
@@ -517,12 +497,13 @@ namespace WebExtensionTests.Services.RewardPoints
         }
 
         [Test]
-        public async Task RewardPointService_SaveRewardPointCreditsAsync_FirstTimeOrderAndItemCreditsAlreadyAchieved()
+        public async Task RewardPointService_SaveRewardPointCreditsAsync_FirstTimeOrderCreditsAlreadyAchieved()
         {
             // Arrange
-            RewardPointRepositoryMock
-                .Setup(x => x.GetFirstTimeItemPurchases(It.IsAny<int>(), It.IsAny<HashSet<int>>()))
-                .Returns(new HashSet<int> { ItemId1, ItemId3 });
+            _order.LineItems = new List<OrderLineItem>
+            {
+                new() { ItemId = ItemId2, Qty = 3 }
+            };
 
             RewardPointRepositoryMock
                 .Setup(x => x.GetFirstTimeOrderPurchaseCount(It.IsAny<int>()))
@@ -540,9 +521,10 @@ namespace WebExtensionTests.Services.RewardPoints
         public async Task RewardPointService_SaveRewardPointCreditsAsync_FirstTimeOrderCredits()
         {
             // Arrange
-            RewardPointRepositoryMock
-                .Setup(x => x.GetFirstTimeItemPurchases(It.IsAny<int>(), It.IsAny<HashSet<int>>()))
-                .Returns(new HashSet<int> { ItemId1 });
+            _order.LineItems = new List<OrderLineItem>
+            {
+                new() { ItemId = ItemId2, Qty = 3 }
+            };
 
             RewardPointRepositoryMock
                 .Setup(x => x.SaveRewardPointCreditsAsync(It.IsAny<List<RewardPointCredit>>()))
@@ -559,8 +541,8 @@ namespace WebExtensionTests.Services.RewardPoints
             await RewardPointService.SaveRewardPointCreditsAsync(OrderNumber);
 
             // Assert
-            RewardPointRepositoryMock.Verify(x => x.SaveRewardPointCreditAsync(It.IsAny<RewardPointCredit>()), Times.Never);
-            RewardPointRepositoryMock.Verify(x => x.SaveRewardPointCreditsAsync(It.IsAny<List<RewardPointCredit>>()), Times.Once);
+            RewardPointRepositoryMock.Verify(x => x.SaveRewardPointCreditAsync(It.IsAny<RewardPointCredit>()), Times.Once);
+            RewardPointRepositoryMock.Verify(x => x.SaveRewardPointCreditsAsync(It.IsAny<List<RewardPointCredit>>()), Times.Never);
             OrderServiceMock.Verify(x => x.Log(OrderNumber, It.Is<string>(y => y.Contains("points awarded from item"))), Times.Once);
         }
 
@@ -568,10 +550,6 @@ namespace WebExtensionTests.Services.RewardPoints
         public async Task RewardPointService_SaveRewardPointCreditsAsync_FirstTimeItemCredits()
         {
             // Arrange
-            RewardPointRepositoryMock
-                .Setup(x => x.GetFirstTimeItemPurchases(It.IsAny<int>(), It.IsAny<HashSet<int>>()))
-                .Returns(new HashSet<int> { ItemId1 });
-
             RewardPointRepositoryMock
                 .Setup(x => x.GetFirstTimeOrderPurchaseCount(It.IsAny<int>()))
                 .Returns(2);
@@ -588,8 +566,8 @@ namespace WebExtensionTests.Services.RewardPoints
             await RewardPointService.SaveRewardPointCreditsAsync(OrderNumber);
 
             // Assert
-            RewardPointRepositoryMock.Verify(x => x.SaveRewardPointCreditAsync(It.IsAny<RewardPointCredit>()), Times.Once);
-            RewardPointRepositoryMock.Verify(x => x.SaveRewardPointCreditsAsync(It.IsAny<List<RewardPointCredit>>()), Times.Never);
+            RewardPointRepositoryMock.Verify(x => x.SaveRewardPointCreditAsync(It.IsAny<RewardPointCredit>()), Times.Never);
+            RewardPointRepositoryMock.Verify(x => x.SaveRewardPointCreditsAsync(It.IsAny<List<RewardPointCredit>>()), Times.Once);
             OrderServiceMock.Verify(x => x.Log(OrderNumber, It.Is<string>(y => y.Contains("points awarded from item"))), Times.Once);
         }
 
