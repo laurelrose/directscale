@@ -105,6 +105,7 @@ WHERE I.[recordnumber] IN (@ItemIds);";
 @"SELECT COUNT(O.[recordnumber])
 FROM [dbo].[ORD_Order] O
 WHERE O.[DistributorID] = @AssociateId
+    AND O.[Void] = 0
     AND NOT EXISTS (
         SELECT 1
         FROM [dbo].[ORD_CustomFields] C
