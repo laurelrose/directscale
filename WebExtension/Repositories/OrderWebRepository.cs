@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Data.SqlClient;
 using System.Linq;
 using System.Threading.Tasks;
+using WebExtension.Models.Order;
 
 namespace WebExtension.Repositories
 {
@@ -12,6 +13,8 @@ namespace WebExtension.Repositories
     {
         List<int> GetFilteredOrderIds(string search, DateTime beginDate, DateTime endDate);
         List<string> GetKitLevelFiveSkuList();
+        int GetEnrollmentSponsorId(int associateId);
+        List<CouponUsageDataModel> GetCouponUsageByOrderId(int orderNumber);
     }
     public class OrderWebRepository : IOrderWebRepository
     {
@@ -65,7 +68,6 @@ namespace WebExtension.Repositories
             return sql;
         }
 
-
         public List<string> GetKitLevelFiveSkuList()
         {
             using (var dbConnection = new SqlConnection(_dataService.GetClientConnectionString().Result))
@@ -79,6 +81,49 @@ namespace WebExtension.Repositories
                 return dbConnection.Query<string>(queryStatement, parameters).ToList();
             }
         }
-        
+
+        public int GetEnrollmentSponsorId(int associateId)
+        {
+            int sponsorId = 0;
+
+            using (var dbConnection = new SqlConnection(_dataService.GetClientConnectionString().Result))
+            {
+                var parameters = new
+                {
+                    AssociateId = associateId
+                };
+
+                var sql = @"SELECT 
+	                        UplineID
+                        FROM CRM_EnrollTree
+                        WHERE 
+	                        DistributorID = @AssociateId";
+                sponsorId = dbConnection.QueryFirstOrDefault<int>(sql, parameters);
+            }
+
+            return sponsorId;
+        }
+
+        public List<CouponUsageDataModel> GetCouponUsageByOrderId(int orderNumber)
+        {
+            var parameters = new
+            {
+                OrderNumber = orderNumber
+            };
+
+            var sql = @"SELECT 
+	                    cu.CouponID
+	                    , Amount
+                    FROM ORD_OrderTotals ot
+                    INNER JOIN ORD_CouponUsage cu ON ot.recordnumber = cu.OrderTotalID
+                    WHERE
+	                    ot.OrderNumber = @OrderNumber";
+
+            using (var connection = new SqlConnection(_dataService.GetClientConnectionString().Result))
+            {
+                return connection.Query<CouponUsageDataModel>(sql, parameters).ToList();
+            }
+        }
+
     }
 }

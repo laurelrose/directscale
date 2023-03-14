@@ -82,6 +82,8 @@ namespace WebExtension.Hooks.Order
                 }
                 #endregion
 
+                _orderWebService.FinalizeAcceptedOrderAfter(request.Order);
+
             }
             catch (Exception ex)
             {

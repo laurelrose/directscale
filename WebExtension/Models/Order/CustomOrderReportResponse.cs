@@ -33,7 +33,7 @@ namespace WebExtension.Models
         public List<Package> Packages { get; set; }
         public List<Payment> Payments { get; set; }
 
-        public OrderViewModel(Order order)
+        public OrderViewModel(DirectScale.Disco.Extension.Order order)
         {
             if (order != null)
             {

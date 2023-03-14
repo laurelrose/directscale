@@ -97,6 +97,8 @@ namespace WebExtension
                 c.AddHook<WriteApplication>();
                 c.AddHook<CreateAutoshipHook>();
                 c.AddHook<UpdateAutoshipHook>();
+                c.AddHook<ProcessCouponCodesHook>();
+                c.AddHook<GetCouponAdjustedVolumeHook>();
 
                 //Event Handler
                 c.AddEventHandler("DailyEvent", "/api/WebHook/DailyEvent");
