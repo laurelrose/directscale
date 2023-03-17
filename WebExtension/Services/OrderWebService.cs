@@ -146,7 +146,7 @@ namespace WebExtension.Services
             try
             {
                 var associateInfo = _associateService.GetAssociate(order.AssociateId);
-                if (associateInfo.Result.AssociateBaseType!=2)
+                if (associateInfo.Result.AssociateBaseType == 1)
                 {
                     return;
                 }
@@ -159,10 +159,10 @@ namespace WebExtension.Services
 
                 var sponsorInfo = _associateService.GetAssociate(sponsorId);
 
-                if (sponsorInfo.Result.AssociateBaseType==2)
+                if (sponsorInfo.Result.AssociateBaseType==2 || sponsorInfo.Result.AssociateBaseType == 3)
                 {
                     var pointsBalance = _rewardPointsService.GetRewardPoints(sponsorId);
-                      var point = (decimal)Math.Round(pointsBalance.Result, 2);
+                    var point = (decimal)Math.Round(pointsBalance.Result, 2);
 
                     var pointsToAward = (decimal)Math.Round((order.Totals.FirstOrDefault().SubTotal - order.Totals.FirstOrDefault().DiscountTotal) * .25, 2);
 
