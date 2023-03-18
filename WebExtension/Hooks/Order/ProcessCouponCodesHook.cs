@@ -13,7 +13,8 @@ namespace WebExtension.Hooks.Order
 {
     public class ProcessCouponCodesHook : IHook<ProcessCouponCodesHookRequest, ProcessCouponCodesHookResponse>
     {
-        public const string ShareAndSave = "ShareAndSave";
+        public static string ShareAndSave = "Share Rewards from ";
+        public string SourceName = "";
         public const int ShareAndSaveCouponId = -999;
         private readonly IAssociateService _associateService;
         private readonly IRewardPointsService _rewardPointsService;
