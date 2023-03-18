@@ -171,6 +171,8 @@ namespace WebExtension.Services
                         return;
                     }
 
+                    ProcessCouponCodesHook.ShareAndSave += $"{associateInfo.Result.DisplayFirstName} {associateInfo.Result.DisplayLastName}";
+
                     _rewardPointsService.AddRewardPointsWithExpiration(sponsorId,
                         (double)pointsToAward,
                         ProcessCouponCodesHook.ShareAndSave,
