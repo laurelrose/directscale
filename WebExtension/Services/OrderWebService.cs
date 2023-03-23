@@ -29,12 +29,13 @@ namespace WebExtension.Services
         private readonly IRewardPointsService _rewardPointsService;
         private readonly ITicketService _ticketService;
         private readonly ICustomLogRepository _customLogRepository;
+        private readonly ITreeService _treeService;
 
         public OrderWebService(IOrderWebRepository orderWebRepository,
             IOrderService orderService, ICurrencyService currencyService, IStatsService statsService, IAssociateService associateService,
             IRewardPointsService rewardPointsService,
             ITicketService ticketService,
-            ICustomLogRepository customLogRepository)
+            ICustomLogRepository customLogRepository, ITreeService treeService)
         {
             _orderWebRepository = orderWebRepository ?? throw new ArgumentNullException(nameof(orderWebRepository));
             _orderService = orderService ?? throw new ArgumentNullException(nameof(orderService));
@@ -44,6 +45,7 @@ namespace WebExtension.Services
             _rewardPointsService = rewardPointsService ?? throw new ArgumentNullException(nameof(rewardPointsService));
             _ticketService = ticketService ?? throw new ArgumentNullException(nameof(ticketService));
             _customLogRepository = customLogRepository ?? throw new ArgumentNullException(nameof(customLogRepository));
+            _treeService = treeService ?? throw new ArgumentNullException(nameof(treeService));
         }
 
         public async Task<List<OrderViewModel>> GetFilteredOrders(string search, DateTime beginDate, DateTime endDate)
@@ -150,7 +152,7 @@ namespace WebExtension.Services
                 {
                     return;
                 }
-                var sponsorId = _orderWebRepository.GetEnrollmentSponsorId(order.AssociateId);
+                var sponsorId = _treeService.GetNodeDetail(new NodeId(order.AssociateId, 0), TreeType.Enrollment)?.Result.UplineId.AssociateId ?? 0;
 
                 if (sponsorId == 0)
                 {
