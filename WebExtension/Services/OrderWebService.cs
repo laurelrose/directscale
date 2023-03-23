@@ -1,4 +1,5 @@
-﻿using DirectScale.Disco.Extension;
+﻿using Azure.Core;
+using DirectScale.Disco.Extension;
 using DirectScale.Disco.Extension.Services;
 using System;
 using System.Collections.Generic;
@@ -7,6 +8,7 @@ using System.Threading.Tasks;
 using WebExtension.Hooks.Order;
 using WebExtension.Models;
 using WebExtension.Repositories;
+using WebExtension.Services.ZiplingoEngagementService;
 
 namespace WebExtension.Services
 {
@@ -30,12 +32,13 @@ namespace WebExtension.Services
         private readonly ITicketService _ticketService;
         private readonly ICustomLogRepository _customLogRepository;
         private readonly ITreeService _treeService;
+        private readonly IZiplingoEngagementService _ziplingoEngagementService;
 
         public OrderWebService(IOrderWebRepository orderWebRepository,
             IOrderService orderService, ICurrencyService currencyService, IStatsService statsService, IAssociateService associateService,
             IRewardPointsService rewardPointsService,
             ITicketService ticketService,
-            ICustomLogRepository customLogRepository, ITreeService treeService)
+            ICustomLogRepository customLogRepository, ITreeService treeService, IZiplingoEngagementService ziplingoEngagementService)
         {
             _orderWebRepository = orderWebRepository ?? throw new ArgumentNullException(nameof(orderWebRepository));
             _orderService = orderService ?? throw new ArgumentNullException(nameof(orderService));
@@ -46,6 +49,7 @@ namespace WebExtension.Services
             _ticketService = ticketService ?? throw new ArgumentNullException(nameof(ticketService));
             _customLogRepository = customLogRepository ?? throw new ArgumentNullException(nameof(customLogRepository));
             _treeService = treeService ?? throw new ArgumentNullException(nameof(treeService));
+            _ziplingoEngagementService = ziplingoEngagementService ?? throw new ArgumentNullException(nameof(ziplingoEngagementService));
         }
 
         public async Task<List<OrderViewModel>> GetFilteredOrders(string search, DateTime beginDate, DateTime endDate)
@@ -108,7 +112,10 @@ namespace WebExtension.Services
             try
             {
                 var stats = await GetCustomerStats(associateId);
-                kpi = stats.Kpis[kpiName];
+                if (stats != null) 
+                {
+                    kpi = stats.Kpis[kpiName];
+                }
             }
             catch (Exception e)
             {
@@ -148,47 +155,79 @@ namespace WebExtension.Services
             try
             {
                 var associateInfo = _associateService.GetAssociate(order.AssociateId);
-                if (associateInfo.Result.AssociateBaseType == 1)
+                if (associateInfo.Result.AssociateBaseType != 1)
                 {
-                    return;
-                }
-                var sponsorId = _treeService.GetNodeDetail(new NodeId(order.AssociateId, 0), TreeType.Enrollment)?.Result.UplineId.AssociateId ?? 0;
+                    var sponsorId = _treeService.GetNodeDetail(new NodeId(order.AssociateId, 0), TreeType.Enrollment)?.Result.UplineId.AssociateId ?? 0;
 
-                if (sponsorId == 0)
-                {
-                    return;
-                }
-
-                var sponsorInfo = _associateService.GetAssociate(sponsorId);
-
-                if (sponsorInfo.Result.AssociateBaseType==2 || sponsorInfo.Result.AssociateBaseType == 3)
-                {
-                    var pointsBalance = _rewardPointsService.GetRewardPoints(sponsorId);
-                    var point = (decimal)Math.Round(pointsBalance.Result, 2);
-
-                    var pointsToAward = (decimal)Math.Round((order.Totals.FirstOrDefault().SubTotal - order.Totals.FirstOrDefault().DiscountTotal) * .25, 2);
-
-                    if (pointsToAward == 0)
+                    if (sponsorId != 0)
                     {
-                        return;
+                        var sponsorInfo = _associateService.GetAssociate(sponsorId);
+
+                        if (sponsorInfo.Result.AssociateBaseType == 2 || sponsorInfo.Result.AssociateBaseType == 3)
+                        {
+                            var pointsBalance = _rewardPointsService.GetRewardPoints(sponsorId);
+                            var point = (decimal)Math.Round(pointsBalance.Result, 2);
+
+                            var pointsToAward = (decimal)Math.Round((order.Totals.FirstOrDefault().SubTotal - order.Totals.FirstOrDefault().DiscountTotal) * .25, 2);
+
+                            if (pointsToAward != 0)
+                            {
+                                ProcessCouponCodesHook.ShareAndSave += $"{associateInfo.Result.DisplayFirstName} {associateInfo.Result.DisplayLastName}";
+
+                                var r = _rewardPointsService.AddRewardPointsWithExpiration(sponsorId,
+                                   (double)pointsToAward,
+                                   ProcessCouponCodesHook.ShareAndSave,
+                                   DateTime.Now,
+                                   DateTime.Now.AddDays(PointExpirationDays),
+                                   order.OrderNumber).Result;
+
+                                var t = _ticketService.LogEvent(sponsorId,
+                                    $"Current RWD account balance {point} RWD, " +
+                                    $"Order {order.OrderNumber} from {associateInfo.Result.Name} earned {pointsToAward} RWD. " +
+                                    $"New RWD account balance {point + pointsToAward} RWD. " +
+                                    $"This distribution will expire in {PointExpirationDays} days.", "", "").Result;
+                            }
+                        }
                     }
-
-                    ProcessCouponCodesHook.ShareAndSave += $"{associateInfo.Result.DisplayFirstName} {associateInfo.Result.DisplayLastName}";
-
-                    _rewardPointsService.AddRewardPointsWithExpiration(sponsorId,
-                        (double)pointsToAward,
-                        ProcessCouponCodesHook.ShareAndSave,
-                        DateTime.Now,
-                        DateTime.Now.AddDays(PointExpirationDays),
-                        order.OrderNumber);
-
-                    _ticketService.LogEvent(sponsorId,
-                        $"Current RWD account balance {point} RWD, " +
-                        $"Order {order.OrderNumber} from {associateInfo.Result.Name} earned {pointsToAward} RWD. " +
-                        $"New RWD account balance {point + pointsToAward} RWD. " +
-                        $"This distribution will expire in {PointExpirationDays} days.","","");
-
                 }
+
+                if (order.OrderType == OrderType.Autoship && (order.Status == OrderStatus.Declined || order.Status == OrderStatus.FraudRejected))
+                {
+                    _ziplingoEngagementService.CallOrderZiplingoEngagementTrigger(order, "AutoShipFailed", true);
+                }
+                if (order.Status == OrderStatus.Paid || order.IsPaid)
+                {
+                    var totalOrders = _orderService.GetOrdersByAssociateId(order.AssociateId, "").Result;
+                    if (totalOrders.Length == 1)
+                    {
+                        _ziplingoEngagementService.CallOrderZiplingoEngagementTrigger(order, "FirstOrderCreated", false);
+                        _ziplingoEngagementService.CallOrderZiplingoEngagementTrigger(order, "OrderCreated", false);
+
+                        //
+                        #region #3159 Trigger for Reward Point Earned for Laurel Rose
+                        _ziplingoEngagementService.CallOrderZiplingoEngagementTrigger(order, "RewardPointEarned", false);
+                        #endregion
+                    }
+                    else
+                    {
+                        _ziplingoEngagementService.CallOrderZiplingoEngagementTrigger(order, "OrderCreated", false);
+                        //
+                        #region #3159 Trigger for Reward Point Earned for Laurel Rose
+                        _ziplingoEngagementService.CallOrderZiplingoEngagementTrigger(order, "RewardPointEarned", false);
+                        #endregion
+                    }
+                }
+
+                //
+                #region #3160 Trigger for Laurel Rose for Infinity Bottles Earned
+                var orderItemSkuList = order.LineItems.Select(x => x.SKU).ToList();
+                var kitLevelFiveSkuList = GetKitLevelFiveSkuList().Result;
+                var KIT_Kpi = GetKpi(order.AssociateId, "KIT").Result;
+                if (KIT_Kpi != null && KIT_Kpi.Value == 0 && kitLevelFiveSkuList.Any(x => orderItemSkuList.Any(y => y == x)))
+                {
+                    _ziplingoEngagementService.CallOrderZiplingoEngagementTrigger(order, "InfinityBottlesEarned", true);
+                }
+                #endregion
             }
             catch (Exception ex)
             {

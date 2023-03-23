@@ -50,6 +50,7 @@ namespace WebExtension.Services.ZiplingoEngagementService
         private readonly ITreeService _treeService;
         private readonly IRankService _rankService;
         private readonly IPaymentProcessingService _paymentProcessingService;
+        private readonly IRewardPointsService _rewardPointsService;
 
         public ZiplingoEngagementService(IZiplingoEngagementRepository repository, 
             ICompanyService companyService,
@@ -58,7 +59,8 @@ namespace WebExtension.Services.ZiplingoEngagementService
             IAssociateService distributorService, 
             ITreeService treeService, 
             IRankService rankService,
-            IPaymentProcessingService paymentProcessingService
+            IPaymentProcessingService paymentProcessingService,
+            IRewardPointsService rewardPointsService
             )
         {
             _ZiplingoEngagementRepository = repository ?? throw new ArgumentNullException(nameof(repository));
@@ -68,6 +70,7 @@ namespace WebExtension.Services.ZiplingoEngagementService
             _distributorService = distributorService ?? throw new ArgumentNullException(nameof(distributorService));
             _treeService = treeService ?? throw new ArgumentNullException(nameof(treeService));
             _rankService = rankService ?? throw new ArgumentNullException(nameof(rankService));
+            _rewardPointsService = rewardPointsService ?? throw new ArgumentNullException(nameof(rewardPointsService));
             _paymentProcessingService = paymentProcessingService ?? throw new ArgumentNullException(nameof(paymentProcessingService));
         }
 
@@ -109,7 +112,13 @@ namespace WebExtension.Services.ZiplingoEngagementService
                     {
                         sponsorSummary = enrollerSummary;
                     }
+                    var associateRewardPointsData = await _rewardPointsService.GetAvailableRewardPoints(order.AssociateId);
+                    var rewardPoints = 0.0; 
                     var CardLastFourDegit = _ZiplingoEngagementRepository.GetLastFoutDegitByOrderNumber(order.OrderNumber);
+                    if (associateRewardPointsData.Length > 0)
+                    {
+                        rewardPoints = associateRewardPointsData.OrderByDescending(o => o.AvailableDate).First().RemainingBalance;
+                    }
                     OrderData data = new OrderData
                     {
                         ShipMethodId = order.Packages.Select(a => a.ShipMethodId).FirstOrDefault(),
@@ -124,7 +133,7 @@ namespace WebExtension.Services.ZiplingoEngagementService
                         OrderDate = order.OrderDate,
                         OrderNumber = order.OrderNumber,
                         OrderType = order.OrderType,
-                        TotalRewardPoints = order.TotalRewardPoints, //Total Reward Points added
+                        TotalRewardPoints = rewardPoints, //Total Reward Points added
                         Tax = order.Totals.Select(m => m.Tax).FirstOrDefault(),
                         ShipCost = order.Totals.Select(m => m.Shipping).FirstOrDefault(),
                         Subtotal = order.Totals.Select(m => m.SubTotal).FirstOrDefault(),
