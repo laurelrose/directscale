@@ -1,10 +1,13 @@
 using DirectScale.Disco.Extension.Middleware;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Localization;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Threading.Tasks;
 using WebExtension.Helper;
 using WebExtension.Helper.Interface;
@@ -59,6 +62,34 @@ namespace WebExtension
             //
             //
             #endregion
+
+            services.Configure<RequestLocalizationOptions>(options =>
+            {
+                var supportedUICultures = new[]
+                {
+                    new CultureInfo("en-US"),
+                    new CultureInfo("es-US"),
+                    new CultureInfo("en-GB"),
+                    new CultureInfo("fr-FR"),
+                };
+
+                var supportedCultures = new[]
+                {
+                    new CultureInfo("en-US"),
+                    new CultureInfo("en-GB"),
+                    new CultureInfo("es-US")
+
+                };
+
+                options.DefaultRequestCulture = new RequestCulture(culture: "en-US", uiCulture: "en-US");
+                options.SupportedCultures = supportedCultures;
+                options.SupportedUICultures = supportedUICultures;
+            });
+
+            services.AddMvc(setupAction => { setupAction.EnableEndpointRouting = false; }).AddJsonOptions(jsonOptions =>
+            {
+                jsonOptions.JsonSerializerOptions.PropertyNamingPolicy = null;
+            }).SetCompatibilityVersion(CompatibilityVersion.Version_3_0);
 
             //Repositories
             services.AddSingleton<ICustomLogRepository, CustomLogRepository>();
