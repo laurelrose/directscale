@@ -190,44 +190,6 @@ namespace WebExtension.Services
                         }
                     }
                 }
-
-                if (order.OrderType == OrderType.Autoship && (order.Status == OrderStatus.Declined || order.Status == OrderStatus.FraudRejected))
-                {
-                    _ziplingoEngagementService.CallOrderZiplingoEngagementTrigger(order, "AutoShipFailed", true);
-                }
-                if (order.Status == OrderStatus.Paid || order.IsPaid)
-                {
-                    var totalOrders = _orderService.GetOrdersByAssociateId(order.AssociateId, "").Result;
-                    if (totalOrders.Length == 1)
-                    {
-                        _ziplingoEngagementService.CallOrderZiplingoEngagementTrigger(order, "FirstOrderCreated", false);
-                        _ziplingoEngagementService.CallOrderZiplingoEngagementTrigger(order, "OrderCreated", false);
-
-                        //
-                        #region #3159 Trigger for Reward Point Earned for Laurel Rose
-                        _ziplingoEngagementService.CallOrderZiplingoEngagementTrigger(order, "RewardPointEarned", false);
-                        #endregion
-                    }
-                    else
-                    {
-                        _ziplingoEngagementService.CallOrderZiplingoEngagementTrigger(order, "OrderCreated", false);
-                        //
-                        #region #3159 Trigger for Reward Point Earned for Laurel Rose
-                        _ziplingoEngagementService.CallOrderZiplingoEngagementTrigger(order, "RewardPointEarned", false);
-                        #endregion
-                    }
-                }
-
-                //
-                #region #3160 Trigger for Laurel Rose for Infinity Bottles Earned
-                var orderItemSkuList = order.LineItems.Select(x => x.SKU).ToList();
-                var kitLevelFiveSkuList = GetKitLevelFiveSkuList().Result;
-                var KIT_Kpi = GetKpi(order.AssociateId, "KIT").Result;
-                if (KIT_Kpi != null && KIT_Kpi.Value == 0 && kitLevelFiveSkuList.Any(x => orderItemSkuList.Any(y => y == x)))
-                {
-                    _ziplingoEngagementService.CallOrderZiplingoEngagementTrigger(order, "InfinityBottlesEarned", true);
-                }
-                #endregion
             }
             catch (Exception ex)
             {
