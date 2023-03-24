@@ -181,11 +181,24 @@ namespace WebExtension.Services
                                    DateTime.Now.AddDays(PointExpirationDays),
                                    order.OrderNumber).Result;
 
-                                var t = _ticketService.LogEvent(sponsorId,
-                                    $"Current RWD account balance {point} RWD, " +
-                                    $"Order {order.OrderNumber} from {associateInfo.Result.Name} earned {pointsToAward} RWD. " +
-                                    $"New RWD account balance {point + pointsToAward} RWD. " +
-                                    $"This distribution will expire in {PointExpirationDays} days.", "", "").Result;
+                                #region #3159 Trigger for Reward Point Earned for Laurel Rose
+
+                                if (r != null)
+                                {
+                                    _ziplingoEngagementService.CallOrderZiplingoEngagementTrigger(order, "RewardPointEarned", false);
+
+
+                                    var t = _ticketService.LogEvent(sponsorId,
+                                        $"Current RWD account balance {point} RWD, " +
+                                        $"Order {order.OrderNumber} from {associateInfo.Result.Name} earned {pointsToAward} RWD. " +
+                                        $"New RWD account balance {point + pointsToAward} RWD. " +
+                                        $"This distribution will expire in {PointExpirationDays} days.", "", "").Result;
+                                }
+
+                                
+                                #endregion
+
+                                
                             }
                         }
                     }
@@ -212,9 +225,7 @@ namespace WebExtension.Services
                     {
                         _ziplingoEngagementService.CallOrderZiplingoEngagementTrigger(order, "OrderCreated", false);
                         //
-                        #region #3159 Trigger for Reward Point Earned for Laurel Rose
-                        _ziplingoEngagementService.CallOrderZiplingoEngagementTrigger(order, "RewardPointEarned", false);
-                        #endregion
+                        
                     }
                 }
 
