@@ -68,6 +68,8 @@ namespace WebExtension
             services.AddSingleton<IZiplingoEngagementRepository, ZiplingoEngagementRepository>();
             services.AddSingleton<ITableCreationRepository, TableCreationRepository>();
             services.AddSingleton<IRewardPointRepository, RewardPointRepository>();
+            services.AddSingleton<IGenericReportRepository, GenericReportRepository>();
+            services.AddSingleton<IReportSourceRepository, ReportSourceRepository>();
 
             //Services
             services.AddSingleton<ICommonService, CommonService>();
@@ -80,6 +82,7 @@ namespace WebExtension
             services.AddSingleton<ITableCreationService, TableCreationService>();
             services.AddSingleton<IRewardPointService, RewardPointService>();
             services.AddSingleton<IDistributedLockingService, DistributedLockingService>();
+            services.AddSingleton<IGenericReportService, GenericReportService>();
 
             //DS
             services.AddDirectScale(c =>

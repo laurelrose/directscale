@@ -4,6 +4,10 @@
     <TargetFramework>net5.0</TargetFramework>
   </PropertyGroup>
 
+  <ItemGroup>
+    <None Remove="Repositories\GenericReportRepository.cs~RF637cee.TMP" />
+  </ItemGroup>
+
 	<ItemGroup>
 		<PackageReference Include="DistributedLock" Version="2.3.2" />
 		<PackageReference Include="Swashbuckle.AspNetCore" Version="6.2.3" />
