@@ -31,7 +31,11 @@ namespace WebExtension.Hooks.Order
         public async Task<ProcessCouponCodesHookResponse> Invoke(ProcessCouponCodesHookRequest request, Func<ProcessCouponCodesHookRequest, Task<ProcessCouponCodesHookResponse>> func)
         {
             var result = await func(request);
- //           ApplyShareAndSave(request, ref result);
+            var applyShareAndSave = ("true".Equals(Environment.GetEnvironmentVariable("Feature_ApplyShareAndSave_truefalse"), StringComparison.OrdinalIgnoreCase));
+            if (applyShareAndSave)
+            {
+                ApplyShareAndSave(request, ref result);
+            }
             return result;
         }
         private void ApplyShareAndSave(ProcessCouponCodesHookRequest request, ref ProcessCouponCodesHookResponse response)
