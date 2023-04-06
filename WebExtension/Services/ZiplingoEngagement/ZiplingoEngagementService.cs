@@ -19,7 +19,7 @@ namespace WebExtension.Services.ZiplingoEngagementService
 {
     public interface IZiplingoEngagementService
     {
-        void CallOrderZiplingoEngagementTrigger(Order order, string eventKey, bool FailedAutoship);
+        void CallOrderZiplingoEngagementTrigger(Order order, string eventKey, bool FailedAutoship, bool isRewardPoint=false, int sponsorId=0);
         void CreateEnrollContact(Order order);
         void CreateContact(Application req, ApplicationResponse response);
         void UpdateContact(Associate req);
@@ -74,10 +74,14 @@ namespace WebExtension.Services.ZiplingoEngagementService
             _paymentProcessingService = paymentProcessingService ?? throw new ArgumentNullException(nameof(paymentProcessingService));
         }
 
-        public async void CallOrderZiplingoEngagementTrigger(Order order, string eventKey, bool FailedAutoship)
+        public async void CallOrderZiplingoEngagementTrigger(Order order, string eventKey, bool FailedAutoship, bool isRewardPoint=false, int sponsorId=0)
         {
             try
             {
+                if (isRewardPoint == true && sponsorId != 0)
+                {
+                    order.AssociateId = sponsorId;
+                }
                 var eventSetting = _ZiplingoEngagementRepository.GetEventSettingDetail(eventKey);
                 if (eventSetting != null && eventSetting?.Status == true)
                 {
