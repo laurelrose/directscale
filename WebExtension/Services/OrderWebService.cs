@@ -180,6 +180,10 @@ namespace WebExtension.Services
                                    DateTime.Now,
                                    DateTime.Now.AddDays(PointExpirationDays),
                                    order.OrderNumber).Result;
+                                if (r != null && sponsorId != 0)
+                                { 
+                                    _ziplingoEngagementService.CallOrderZiplingoEngagementTrigger(order, "RewardPointEarned", false, true, sponsorId); //Reward point variable true
+                                }
 
                                 var t = _ticketService.LogEvent(sponsorId,
                                     $"Current RWD account balance {point} RWD, " +
