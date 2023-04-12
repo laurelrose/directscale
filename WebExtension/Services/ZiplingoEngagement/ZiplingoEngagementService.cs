@@ -38,6 +38,7 @@ namespace WebExtension.Services.ZiplingoEngagementService
         void CreateAutoshipTrigger(Autoship autoshipInfo);
         void AssociateStatusSync(List<GetAssociateStatusModel> associateStatuses);
         void UpdateAutoshipTrigger(Autoship updatedAutoshipInfo);
+        void CallFullRefundOrderZiplingoEngagementTrigger(Order order, string eventKey, bool FailedAutoship);
     }
     public class ZiplingoEngagementService : IZiplingoEngagementService
     {
@@ -1549,6 +1550,95 @@ namespace WebExtension.Services.ZiplingoEngagementService
                 _customLogRepository.CustomErrorLog(0, 0, "Error while calling sync call for associate statuses", ex.Message);
             }
 
+        }
+
+
+        //FullRefundOrder
+        public async void CallFullRefundOrderZiplingoEngagementTrigger(Order order, string eventKey, bool FailedAutoship)
+        {
+            try
+            {
+                var eventSetting = _ZiplingoEngagementRepository.GetEventSettingDetail(eventKey);
+                if (eventSetting != null && eventSetting?.Status == true)
+                {
+                    var company = _companyService.GetCompany();
+                    var settings = _ZiplingoEngagementRepository.GetSettings();
+                    int enrollerID = 0;
+                    int sponsorID = 0;
+                    if (_treeService.GetNodeDetail(new NodeId(order.AssociateId, 0), TreeType.Enrollment).Result.UplineId != null)
+                    {
+                        enrollerID = _treeService.GetNodeDetail(new NodeId(order.AssociateId, 0), TreeType.Enrollment)?.Result.UplineId.AssociateId ?? 0;
+                    }
+                    if (_treeService.GetNodeDetail(new NodeId(order.AssociateId, 0), TreeType.Unilevel).Result.UplineId != null)
+                    {
+                        sponsorID = _treeService.GetNodeDetail(new NodeId(order.AssociateId, 0), TreeType.Unilevel)?.Result.UplineId.AssociateId ?? 0;
+                    }
+
+                    Associate sponsorSummary = new Associate();
+                    Associate enrollerSummary = new Associate();
+                    if (enrollerID <= 0)
+                    {
+                        enrollerSummary = new Associate();
+                    }
+                    else
+                    {
+                        enrollerSummary = await _distributorService.GetAssociate(enrollerID);
+                    }
+                    if (sponsorID > 0)
+                    {
+                        sponsorSummary = await _distributorService.GetAssociate(sponsorID);
+                    }
+                    else
+                    {
+                        sponsorSummary = enrollerSummary;
+                    }
+                    var CardLastFourDegit = _ZiplingoEngagementRepository.GetLastFoutDegitByOrderNumber(order.OrderNumber);
+                    RefundOrder data = new RefundOrder
+                    {
+                        AssociateId = order.AssociateId,
+                        BackofficeId = order.BackofficeId,
+                        Email = order.Email,
+                        InvoiceDate = order.InvoiceDate,
+                        IsPaid = order.IsPaid,
+                        LocalInvoiceNumber = order.LocalInvoiceNumber,
+                        Name = order.Name,
+                        Phone = order.BillPhone,
+                        OrderDate = order.OrderDate,
+                        OrderNumber = order.OrderNumber,
+                        OrderType = order.OrderType,
+                        Tax = order.Totals.Select(m => m.Tax).FirstOrDefault(),
+                        ShipCost = order.Totals.Select(m => m.Shipping).FirstOrDefault(),
+                        Subtotal = order.Totals.Select(m => m.SubTotal).FirstOrDefault(),
+                        USDTotal = order.USDTotal,
+                        Total = order.Totals.Select(m => m.Total).FirstOrDefault(),
+                        PaymentMethod = CardLastFourDegit,
+                        ProductInfo = order.LineItems,
+                        ProductNames = string.Join(",", order.LineItems.Select(x => x.ProductName).ToArray()),
+                        ErrorDetails = FailedAutoship ? order.Payments.FirstOrDefault().PaymentResponse.ToString() : "",
+                        CompanyDomain = company.Result.BackOfficeHomePageURL,
+                        LogoUrl = settings.LogoUrl,
+                        CompanyName = settings.CompanyName,
+                        EnrollerId = enrollerSummary.AssociateId,
+                        SponsorId = sponsorSummary.AssociateId,
+                        EnrollerName = enrollerSummary.DisplayFirstName + ' ' + enrollerSummary.DisplayLastName,
+                        EnrollerMobile = enrollerSummary.PrimaryPhone,
+                        EnrollerEmail = enrollerSummary.EmailAddress,
+                        SponsorName = sponsorSummary.DisplayFirstName + ' ' + sponsorSummary.DisplayLastName,
+                        SponsorMobile = sponsorSummary.PrimaryPhone,
+                        SponsorEmail = sponsorSummary.EmailAddress,
+                        BillingAddress = order.BillAddress,
+                        ShippingAddress = order.Packages?.FirstOrDefault()?.ShippingAddress
+                    };
+                    var strData = JsonConvert.SerializeObject(data);
+                    ZiplingoEngagementRequest request = new ZiplingoEngagementRequest { associateid = order.AssociateId, companyname = settings.CompanyName, eventKey = eventKey, data = strData };
+                    var jsonReq = JsonConvert.SerializeObject(request);
+                    CallZiplingoEngagementApi(jsonReq, "Campaign/ExecuteTrigger");
+                }
+            }
+            catch (Exception e)
+            {
+                _customLogRepository.CustomErrorLog(0, 0, "Error with in :" + eventKey, e.Message);
+            }
         }
     }
 }

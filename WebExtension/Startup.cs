@@ -133,6 +133,7 @@ namespace WebExtension
                 c.AddHook<UpdateAutoshipHook>();
                 c.AddHook<ProcessCouponCodesHook>();
                 c.AddHook<GetCouponAdjustedVolumeHook>();
+                c.AddHook<FullRefundOrderHook>();
 
                 //Event Handler
                 c.AddEventHandler("DailyEvent", "/api/WebHook/DailyEvent");
