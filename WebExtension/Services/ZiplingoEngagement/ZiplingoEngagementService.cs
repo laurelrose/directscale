@@ -1610,6 +1610,8 @@ namespace WebExtension.Services.ZiplingoEngagementService
                         ShipCost = order.Totals.Select(m => m.Shipping).FirstOrDefault(),
                         Subtotal = order.Totals.Select(m => m.SubTotal).FirstOrDefault(),
                         USDTotal = order.USDTotal,
+                        RefundAmount=order.Totals.Select(m => m.SubTotal).FirstOrDefault(),
+                        RefundDate= DateTime.Now,
                         Total = order.Totals.Select(m => m.Total).FirstOrDefault(),
                         PaymentMethod = CardLastFourDegit,
                         ProductInfo = order.LineItems,
