@@ -150,55 +150,79 @@ namespace WebExtension.Services
             }
         }
 
-        private void DistributeShareAndSaveRewards(DirectScale.Disco.Extension.Order order)
+        private async Task<int> DistributeShareAndSaveRewards(DirectScale.Disco.Extension.Order order)
         {
             try
             {
-                var associateInfo = _associateService.GetAssociate(order.AssociateId);
-                if (associateInfo.Result.AssociateBaseType != 1)
+                var associateInfo = await _associateService.GetAssociate(order.AssociateId);
+                if (associateInfo.AssociateType != 1)
                 {
-                    var sponsorId = _treeService.GetNodeDetail(new NodeId(order.AssociateId, 0), TreeType.Enrollment)?.Result.UplineId.AssociateId ?? 0;
+                    var sponsorId = _treeService.GetNodeDetail(new NodeId(order.AssociateId, 0), TreeType.Enrollment).Result?.UplineId.AssociateId ?? 0;
 
                     if (sponsorId != 0)
                     {
-                        var sponsorInfo = _associateService.GetAssociate(sponsorId);
+                        var sponsorInfo = await _associateService.GetAssociate(sponsorId);
 
-                        if (sponsorInfo.Result.AssociateBaseType == 2 || sponsorInfo.Result.AssociateBaseType == 3)
+                        if (sponsorInfo.AssociateType == 2 || sponsorInfo.AssociateType == 3)
                         {
-                            var pointsBalance = _rewardPointsService.GetRewardPoints(sponsorId);
-                            var point = (decimal)Math.Round(pointsBalance.Result, 2);
+                            var pointsBalance = await _rewardPointsService.GetRewardPoints(sponsorId);
+                            var point = (decimal)Math.Round(pointsBalance, 2);
 
                             var pointsToAward = (decimal)Math.Round((order.Totals.FirstOrDefault().SubTotal - order.Totals.FirstOrDefault().DiscountTotal) * .25, 2);
 
                             if (pointsToAward != 0)
                             {
-                                ProcessCouponCodesHook.ShareAndSave += $"{associateInfo.Result.DisplayFirstName} {associateInfo.Result.DisplayLastName}";
+                                ProcessCouponCodesHook.ShareAndSave += $"{associateInfo.DisplayFirstName} {associateInfo.DisplayLastName}";
 
-                                var r = _rewardPointsService.AddRewardPointsWithExpiration(sponsorId,
+                                var r = await _rewardPointsService.AddRewardPointsWithExpiration(sponsorId,
                                    (double)pointsToAward,
                                    ProcessCouponCodesHook.ShareAndSave,
                                    DateTime.Now,
                                    DateTime.Now.AddDays(PointExpirationDays),
-                                   order.OrderNumber).Result;
+                                   order.OrderNumber);
                                 if (r != null && sponsorId != 0)
-                                { 
+                                {
                                     _ziplingoEngagementService.CallOrderZiplingoEngagementTrigger(order, "RewardPointEarned", false, true, sponsorId); //Reward point variable true
+
+                                    var t = await _ticketService.LogEvent(sponsorId,
+                                    $"Current RWD account balance {point} RWD, " +
+                                    $"Order {order.OrderNumber} from {associateInfo.Name} earned {pointsToAward} RWD. " +
+                                    $"New RWD account balance {point + pointsToAward} RWD. " +
+                                    $"This distribution will expire in {PointExpirationDays} days.", "", "");
+
+                                    return 0;
+                                }
+                                else
+                                {
+                                    return 1;
                                 }
 
-                                var t = _ticketService.LogEvent(sponsorId,
-                                    $"Current RWD account balance {point} RWD, " +
-                                    $"Order {order.OrderNumber} from {associateInfo.Result.Name} earned {pointsToAward} RWD. " +
-                                    $"New RWD account balance {point + pointsToAward} RWD. " +
-                                    $"This distribution will expire in {PointExpirationDays} days.", "", "").Result;
+                            }
+                            else
+                            {
+                                return 1;
                             }
                         }
+                        else
+                        {
+                            return 1;
+                        }
                     }
+                    else
+                    {
+                        return 1;
+                    }
+                }
+                else
+                {
+                    return 1;
                 }
             }
             catch (Exception ex)
             {
                 _customLogRepository.CustomErrorLog(order.AssociateId, order.OrderNumber, "Error in DistributeShareAndSaveRewards", "Error : " + ex.Message);
-                throw new Exception(ex.Message);
+                //throw new Exception(ex.Message);
+                return 1;
             }
         }
     }
