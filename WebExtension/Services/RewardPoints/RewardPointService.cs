@@ -260,7 +260,7 @@ namespace WebExtension.Services.RewardPoints
 
             // Business Requirement: If Field1 of the Order's CustomFields is set to "true" or some variation of it, then this indicates an order that was already received.
             // RWD credits do not apply to such orders.
-            if ("TRUE".Equals(order.Custom.Field1, StringComparison.OrdinalIgnoreCase))
+            if ("TRUE".Equals(order.Custom.Field1, StringComparison.OrdinalIgnoreCase) || "1".Equals(order.Custom.Field1, StringComparison.OrdinalIgnoreCase))
             {
                 itemCreditMap = new Dictionary<int, double>();
                 hasFirstTimeItems = false;
@@ -288,7 +288,7 @@ namespace WebExtension.Services.RewardPoints
             //
             // Business Requirement: If the given Associate has already placed an order, the First-time Order promotion has already been achieved.
             // An Associate can only achieve a First-time Order once.
-            if ("TRUE".Equals(order.Custom.Field1, StringComparison.OrdinalIgnoreCase) || _rewardPointRepository.GetFirstTimeOrderPurchaseCount(order.AssociateId) > 1)
+            if ("TRUE".Equals(order.Custom.Field1, StringComparison.OrdinalIgnoreCase) || "1".Equals(order.Custom.Field1, StringComparison.OrdinalIgnoreCase) || _rewardPointRepository.GetFirstTimeOrderPurchaseCount(order.AssociateId) > 1)
             {
                 orderCreditMap = new Dictionary<int, double>();
                 isFirstTimeOrder = false;

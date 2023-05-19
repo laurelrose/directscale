@@ -76,8 +76,8 @@ namespace WebExtension.Hooks.Order
                 //
                 #region #3160 Trigger for Laurel Rose for Infinity Bottles Earned
                 var orderItemSkuList = order.LineItems.Select(x => x.SKU).ToList();
-                var kitLevelFiveSkuList = _orderWebService.GetKitLevelFiveSkuList().Result;
-                var KIT_Kpi = _orderWebService.GetKpi(order.AssociateId, "KIT").Result;
+                var kitLevelFiveSkuList = await _orderWebService.GetKitLevelFiveSkuList();
+                var KIT_Kpi = await _orderWebService.GetKpi(order.AssociateId, "KIT");
                 if (KIT_Kpi != null && KIT_Kpi.Value == 0 && kitLevelFiveSkuList.Any(x => orderItemSkuList.Any(y => y == x)))
                 {
                     _ziplingoEngagementService.CallOrderZiplingoEngagementTrigger(order, "InfinityBottlesEarned", true);
