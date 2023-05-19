@@ -42,12 +42,14 @@ namespace WebExtension.Hooks.Order
         {
             try
             {
-                var associateInfo = _associateService.GetAssociate(request.AssociateId);
-                if (associateInfo != null)
+                var associateInfo = _associateService.GetAssociate(request.AssociateId).Result;
+                
+                // Only apply "Share And Save" to Associate Types 2 & 3.
+                if (associateInfo != null && (associateInfo.AssociateType == 2 || associateInfo.AssociateType == 3))
                 {
                     var adjustedSubtotal = (decimal)request.SubTotal - (decimal)response.OrderCoupons.DiscountTotal;
                     var usedCoupons = response.OrderCoupons.UsedCoupons?.ToList() ?? new List<OrderCoupon>();
-                    var pointsBalance =  _rewardPointsService.GetRewardPoints(associateInfo.Result.AssociateId);
+                    var pointsBalance =  _rewardPointsService.GetRewardPoints(associateInfo.AssociateId);
                     var point = (double)Math.Round(pointsBalance.Result, 2);
                     var adjusted = (double)Math.Round(adjustedSubtotal, 2);
                     var pointsToUse = (double)Math.Round(adjusted > point ? point : adjusted, 2);
