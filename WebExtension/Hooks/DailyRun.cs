@@ -22,26 +22,25 @@ namespace WebExtension.Hooks
             _customLogRepository = customLogRepository ?? throw new ArgumentNullException(nameof(customLogRepository));
         }
 
-        [ExtensionAuthorize]
-        [HttpPost("DailyRun")]
-        public IActionResult DailyRunWebHook()
-        {
-            try
-            {
-                _ziplingoEngagementService.AssociateBirthDateTrigger();
-                _ziplingoEngagementService.AssociateWorkAnniversaryTrigger();
-                _dailyRunService.FiveDayRun();
-                _dailyRunService.SentNotificationOnCardExpiryBefore30Days();
-                _dailyRunService.ExecuteCommissionEarned();
-                _dailyRunService.GetAssociateStatuses(); //New sync api for associate statuses
-                _ziplingoEngagementService.SentNotificationOnServiceExpiryBefore2Weeks();
-            }
-            catch (Exception ex)
-            {
-                _customLogRepository.CustomErrorLog(0, 0, "Error with in daily run hook", ex.Message);
-            }
+        //[ExtensionAuthorize]
+        //[HttpPost("DailyRun")]
+        //public IActionResult DailyRunWebHook()
+        //{
+        //    try
+        //    {
+        //        _ziplingoEngagementService.AssociateBirthDateTrigger();
+        //        _ziplingoEngagementService.AssociateWorkAnniversaryTrigger();
+        //        _dailyRunService.FiveDayRun();
+        //        _dailyRunService.SentNotificationOnCardExpiryBefore30Days();
+        //        _dailyRunService.ExecuteCommissionEarned();
+        //        _dailyRunService.GetAssociateStatuses(); //New sync api for associate statuses
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        _customLogRepository.CustomErrorLog(0, 0, "Error with in daily run hook", ex.Message);
+        //    }
 
-            return Ok();
-        }
+        //    return Ok();
+        //}
     }
 }
