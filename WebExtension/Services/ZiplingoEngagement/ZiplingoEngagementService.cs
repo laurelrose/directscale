@@ -144,6 +144,8 @@ namespace WebExtension.Services.ZiplingoEngagementService
                         Subtotal = order.Totals.Select(m => m.SubTotal).FirstOrDefault(),
                         USDTotal = order.USDTotal,
                         Total = order.Totals.Select(m => m.Total).FirstOrDefault(),
+                        TotalPaid = order.Totals.Select(m => m.PaidAmount).FirstOrDefault(),
+                        TotalDue = order.Totals.Select(m => m.TotalDue).FirstOrDefault(),
                         PaymentMethod = CardLastFourDegit,
                         ProductInfo = order.LineItems,
                         ProductNames = string.Join(",", order.LineItems.Select(x => x.ProductName).ToArray()),

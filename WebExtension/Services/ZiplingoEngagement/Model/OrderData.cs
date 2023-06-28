@@ -19,6 +19,8 @@ namespace WebExtension.Services.ZiplingoEngagementService.Model
         public double USDTotal { get; set; }
         public double Subtotal { get; set; }
         public double Total { get; set; }
+        public double TotalPaid { get; set; }
+        public double TotalDue { get; set; }
         public double Tax { get; set; }
         public double ShipCost { get; set; }
         public double TotalRewardPoints { get; set; }
