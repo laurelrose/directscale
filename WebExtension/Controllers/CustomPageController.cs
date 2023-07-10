@@ -9,9 +9,17 @@ using System.Linq;
 using System.Threading.Tasks;
 using WebExtension.Helper.Interface;
 using WebExtension.Helper.Models;
+using WebExtension.Models;
+using WebExtension.Services.ZiplingoEngagementService;
+using WebExtension.Services.ZiplingoEngagementService.Model;
 
 namespace WebExtension.Controllers
 {
+    public class resObj
+    {
+        public ZiplingoEngagementSettings settings { get; set; }
+        public List<ZiplingoEventSettings> eventSettings { get; set; }
+    }
     public class CustomPageController : Controller
     {
         ////private configSetting _config;
@@ -23,25 +31,27 @@ namespace WebExtension.Controllers
         ////private readonly ISettingsService _settingsService;
         //
         private readonly ICommonService _commonService;
-        //
-        public CustomPageController(ICommonService commonService)
+        private readonly IZiplingoEngagementRepository _ziplingoEngagementRepository;
+        public CustomPageController(ICommonService commonService, IZiplingoEngagementRepository ziplingoEngagementRepository)
         {
-            ////_config = config.Value;
-            //////
-            ////_currentUser = currentUser ?? throw new ArgumentNullException(nameof(currentUser));
-            ////_settingsService = settingsService ?? throw new ArgumentNullException(nameof(settingsService));
-            //////
-            ////DirectScale.Disco.Extension.ExtensionContext extension = _settingsService.ExtensionContext().Result;
-            ////DSBaseUrl = _config.BaseURL.Replace("{clientId}", extension.ClientId).Replace("{environment}", extension.EnvironmentType == EnvironmentType.Live ? "" : "stage");
-            //
+            
             _commonService = commonService ?? throw new ArgumentNullException(nameof(commonService));
-            //
+            _ziplingoEngagementRepository= ziplingoEngagementRepository ?? throw new ArgumentNullException(nameof(ziplingoEngagementRepository));
+          
         }
-
+        public IActionResult ZiplingoEngagementSetting()
+        {
+            ZiplingoEngagementSettings _settings = _ziplingoEngagementRepository.GetSettings();
+            List<ZiplingoEventSettings> _eventSettings = _ziplingoEngagementRepository.GetEventSettingsList();
+            resObj viewDataSend = new resObj() { settings = _settings, eventSettings = _eventSettings };
+            ViewBag.Message = viewDataSend;
+            return View();
+        }
         [ExtensionAuthorize]
         public async Task<IActionResult> CustomOrderReport()
         {
             return View();
         }
+        
     }
 }

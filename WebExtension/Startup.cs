@@ -1,4 +1,5 @@
 using DirectScale.Disco.Extension.Middleware;
+using DirectScale.Disco.Extension.Middleware.Models;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Localization;
@@ -120,6 +121,8 @@ namespace WebExtension
             {
                 //CustomPage
                 //c.AddCustomPage(Menu.Associates, "Custom Order Report", "/CustomPage/CustomOrderReport");
+                //ZiplingoEngagement Setting page
+                c.AddCustomPage(Menu.Settings, "Ziplingo Engagement Setting", "/CustomPage/ZiplingoEngagementSetting");
 
                 //Hooks
                 //c.AddHook<SubmitOrderHook>();
