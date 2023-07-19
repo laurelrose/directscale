@@ -13,7 +13,7 @@ namespace WebExtension.Services.ZiplingoEngagementService
     public interface IZiplingoEngagementRepository
     {
         ZiplingoEngagementSettings GetSettings();
-        void UpdateSettings(ZiplingoEngagementSettingsRequest settings);
+        void UpdateSettings(ZiplingoEngagementSettings settings);
         void ResetSettings();
         ShipInfo GetOrderNumber(int packageId);
         List<AssociateInfo> AssociateBirthdayWishesInfo();
@@ -48,15 +48,19 @@ namespace WebExtension.Services.ZiplingoEngagementService
 
         public ZiplingoEngagementSettings GetSettings()
         {
+            var checkenv = "Stage";
             EnvironmentType env = _settingsService.ExtensionContext().Result.EnvironmentType;
-            using (var dbConnection = new System.Data.SqlClient.SqlConnection(_dataService.GetClientConnectionString().Result))
+            if (env == EnvironmentType.Live)
+            {
+                checkenv = "Live";
+            }
+            using (var dbConnection = new System.Data.SqlClient.SqlConnection(_dataService.GetClientConnectionString().GetAwaiter().GetResult()))
             {
                 var parameters = new
                 {
-                    Environment = (env == EnvironmentType.Live ? "Live" : "Stage")
+                    Environment = checkenv
                 };
-                var settingsQuery = "SELECT * FROM Client.ZiplingoEngagementSettings where Environment = @Environment";
-
+                var settingsQuery = "SELECT * FROM Client.ZiplingoEngagementSettings  Where Environment=@Environment";
                 return dbConnection.QueryFirstOrDefault<ZiplingoEngagementSettings>(settingsQuery, parameters);
             }
         }
@@ -109,7 +113,7 @@ namespace WebExtension.Services.ZiplingoEngagementService
             }
         }
 
-        public void UpdateSettings(ZiplingoEngagementSettingsRequest settings)
+        public void UpdateSettings(ZiplingoEngagementSettings settings)
         {
             EnvironmentType env = _settingsService.ExtensionContext().Result.EnvironmentType;
             using (var dbConnection = new System.Data.SqlClient.SqlConnection(_dataService.GetClientConnectionString().Result))
@@ -121,13 +125,10 @@ namespace WebExtension.Services.ZiplingoEngagementService
                     settings.Password,
                     settings.LogoUrl,
                     settings.CompanyName,
-                    settings.AllowBirthday,
-                    settings.AllowAnniversary,
-                    settings.AllowRankAdvancement,
                     Environment = (env == EnvironmentType.Live ? "Live" : "Stage")
                 };
 
-                var updateStatement = @"UPDATE Client.ZiplingoEngagementSettings SET ApiUrl = @ApiUrl,  Username = @Username, Password = @Password, LogoUrl = @LogoUrl, CompanyName = @CompanyName, AllowBirthday = @AllowBirthday, AllowAnniversary = @AllowAnniversary, AllowRankAdvancement = @AllowRankAdvancement where Environment = @Environment";
+                var updateStatement = @"UPDATE Client.ZiplingoEngagementSettings SET ApiUrl = @ApiUrl,  Username = @Username, Password = @Password, LogoUrl = @LogoUrl, CompanyName = @CompanyName where Environment = @Environment";
                 dbConnection.Execute(updateStatement, parameters);
             }
         }
