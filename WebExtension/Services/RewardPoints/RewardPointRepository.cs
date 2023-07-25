@@ -67,7 +67,7 @@ FROM [dbo].[CRM_CommissionPeriods]
 @"SELECT I.[recordnumber] AS ItemId, CAST(C.[Field2] AS FLOAT) AS FirstTimeItemDiscount
 FROM [dbo].[INV_Inventory] I
 JOIN [dbo].[INV_CustomFields] C ON C.[ItemID] = I.[recordnumber] AND ISNULL(C.[Field2], '') != ''
-WHERE I.[recordnumber] IN (@ItemIds);";
+WHERE I.[recordnumber] IN @ItemIds;";
 
             var itemDiscountsMap = new Dictionary<int, double>();
             using var dbConnection = new SqlConnection(_dataService.GetClientConnectionString().ConfigureAwait(false).GetAwaiter().GetResult());
@@ -86,7 +86,7 @@ WHERE I.[recordnumber] IN (@ItemIds);";
 @"SELECT I.[recordnumber] AS ItemId, CAST(C.[Field1] AS FLOAT) AS FirstTimeOrderDiscount
 FROM [dbo].[INV_Inventory] I
 JOIN [dbo].[INV_CustomFields] C ON C.[ItemID] = I.[recordnumber] AND ISNULL(C.[Field1], '') != ''
-WHERE I.[recordnumber] IN (@ItemIds);";
+WHERE I.[recordnumber] IN @ItemIds;";
 
             var orderDiscountsMap = new Dictionary<int, double>();
             using var dbConnection = new SqlConnection(_dataService.GetClientConnectionString().ConfigureAwait(false).GetAwaiter().GetResult());
