@@ -5,6 +5,13 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Remove="Services\ZiplingoEngagement\**" />
+    <Content Remove="Services\ZiplingoEngagement\**" />
+    <EmbeddedResource Remove="Services\ZiplingoEngagement\**" />
+    <None Remove="Services\ZiplingoEngagement\**" />
+  </ItemGroup>
+
+  <ItemGroup>
     <None Remove="Repositories\GenericReportRepository.cs~RF637cee.TMP" />
   </ItemGroup>
 
@@ -16,5 +23,6 @@
 		<PackageReference Include="Dapper" Version="2.0.123" />
 		<PackageReference Include="System.Data.SqlClient" Version="4.8.3" />
 		<PackageReference Include="RestSharp" Version="106.6.10" />
+		<PackageReference Include="Ziplingo.Engagement.Deployment" Version="1.1.0" />
 	</ItemGroup>
 </Project>

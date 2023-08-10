@@ -23,7 +23,7 @@ using WebExtension.Services.DailyRun;
 using WebExtension.Services.DistributedLocking;
 using WebExtension.Services.RewardPoints;
 using WebExtension.Services.TableCreation;
-using WebExtension.Services.ZiplingoEngagementService;
+using ZiplingoEngagement;
 
 namespace WebExtension
 {
@@ -43,7 +43,7 @@ namespace WebExtension
         {
             // Add cors
             services.AddCors();
-
+            services.AddZiplingoEngagement();
             #region FOR LOCAL DEBUGGING USE
             //
             //
@@ -97,7 +97,6 @@ namespace WebExtension
             services.AddSingleton<IAssociateWebRepository, AssociateWebRepository>();
             services.AddSingleton<IOrderWebRepository, OrderWebRepository>();
             services.AddSingleton<IDailyRunRepository, DailyRunRepository>();
-            services.AddSingleton<IZiplingoEngagementRepository, ZiplingoEngagementRepository>();
             services.AddSingleton<ITableCreationRepository, TableCreationRepository>();
             services.AddSingleton<IRewardPointRepository, RewardPointRepository>();
             services.AddSingleton<IGenericReportRepository, GenericReportRepository>();
@@ -110,7 +109,6 @@ namespace WebExtension
             services.AddSingleton<IOrderWebService, OrderWebService>();
             services.AddSingleton<IHttpClientService, HttpClientService>();
             services.AddSingleton<IDailyRunService, DailyRunService>();
-            services.AddSingleton<IZiplingoEngagementService, ZiplingoEngagementService>();
             services.AddSingleton<ITableCreationService, TableCreationService>();
             services.AddSingleton<IRewardPointService, RewardPointService>();
             services.AddSingleton<IDistributedLockingService, DistributedLockingService>();

@@ -6,22 +6,21 @@ using WebExtension.Helper;
 using WebExtension.Hooks;
 using WebExtension.Repositories;
 using WebExtension.Services.DailyRun;
-using WebExtension.Services.ZiplingoEngagementService;
+using ZiplingoEngagement.Services.Interface;
 
 namespace WebExtension.Controllers
 {
     public class DailyRunCustomAPI : ControllerBase
     {
-        private readonly IZiplingoEngagementService _ziplingoEngagementService;
+        private readonly IZLAssociateService _zlassociateService;
         private readonly IDailyRunService _dailyRunService;
         private readonly ICustomLogRepository _customLogRepository;
-        public DailyRunCustomAPI(IZiplingoEngagementService ziplingoEngagementService, IDailyRunService dailyRunService, ICustomLogRepository customLogRepository)
+        public DailyRunCustomAPI( IDailyRunService dailyRunService, ICustomLogRepository customLogRepository, IZLAssociateService zlassociateService)
         {
-  
-                _ziplingoEngagementService = ziplingoEngagementService ?? throw new ArgumentNullException(nameof(ziplingoEngagementService));
                 _dailyRunService = dailyRunService ?? throw new ArgumentNullException(nameof(dailyRunService));
                 _customLogRepository = customLogRepository ?? throw new ArgumentNullException(nameof(customLogRepository));
-            
+            _zlassociateService = zlassociateService ?? throw new ArgumentNullException(nameof(zlassociateService));
+
         }
 
         [HttpPost]
@@ -30,8 +29,8 @@ namespace WebExtension.Controllers
         {
             try
             {
-                _ziplingoEngagementService.AssociateBirthDateTrigger();
-                _ziplingoEngagementService.AssociateWorkAnniversaryTrigger();
+                _zlassociateService.AssociateBirthDay();
+                _zlassociateService.AssociateWorkAnniversary();
                 _dailyRunService.FiveDayRun();
                 _dailyRunService.SentNotificationOnCardExpiryBefore30Days();
                 _dailyRunService.ExecuteCommissionEarned();

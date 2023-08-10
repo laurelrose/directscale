@@ -5,7 +5,7 @@ using System.Collections.Generic;
 using System.Data.SqlClient;
 using System.Linq;
 using WebExtension.Services.DailyRun.Models;
-using WebExtension.Services.ZiplingoEngagement.Model;
+using ZiplingoEngagement.Models.Associate;
 
 namespace WebExtension.Services.DailyRun
 {
@@ -13,7 +13,7 @@ namespace WebExtension.Services.DailyRun
     {
         List<AutoshipInfo> GetNextFiveDayAutoships();
         List<CardInfo> GetCreditCardInfoBefore30Days();
-        List<GetAssociateStatusModel> GetAssociateStatuses();
+        List<ZiplingoEngagement.Models.Associate.GetAssociateStatusModel> GetAssociateStatuses();
     }
     public class DailyRunRepository : IDailyRunRepository
     {
@@ -53,7 +53,7 @@ namespace WebExtension.Services.DailyRun
             }
         }
 
-        public List<GetAssociateStatusModel> GetAssociateStatuses()
+        public List<ZiplingoEngagement.Models.Associate.GetAssociateStatusModel> GetAssociateStatuses()
         {
             using (var dbConnection = new SqlConnection(_dataService.GetConnectionString().Result))
             {
@@ -69,7 +69,7 @@ namespace WebExtension.Services.DailyRun
                             join CRM_AssociateStatuses s
                             on s.recordnumber = d.StatusID
                             where CAST(cte.last_modified as Date) = CAST(GETDATE() - 1 as Date)";
-                var info = dbConnection.Query<GetAssociateStatusModel>(sql).ToList();
+                var info = dbConnection.Query<ZiplingoEngagement.Models.Associate.GetAssociateStatusModel>(sql).ToList();
                 return info;
             }
         }

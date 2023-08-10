@@ -3,8 +3,8 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using System;
 using WebExtension.Services.DailyRun;
-using WebExtension.Services.ZiplingoEngagementService;
-using WebExtension.Services.ZiplingoEngagementService.Model;
+using ZiplingoEngagement.Models.Request;
+using ZiplingoEngagement.Services.Interface;
 
 namespace WebExtension.Controllers
 {
@@ -13,12 +13,12 @@ namespace WebExtension.Controllers
     public class TestApiController : Controller
     {
         private readonly IDailyRunService _dailyRunService;
-        private readonly IZiplingoEngagementRepository _ziplingoEngagementRepository;
+        private readonly IZLSettingsService _zLSettingsService;
 
-        public TestApiController(IDailyRunService dailyRunService, IZiplingoEngagementRepository ziplingoEngagementRepository)
+        public TestApiController(IDailyRunService dailyRunService, IZLSettingsService zLSettingsService)
         {
-            _dailyRunService = dailyRunService ?? throw new ArgumentNullException(nameof(dailyRunService)); 
-            _ziplingoEngagementRepository= ziplingoEngagementRepository ?? throw new ArgumentNullException(nameof(ziplingoEngagementRepository));
+            _dailyRunService = dailyRunService ?? throw new ArgumentNullException(nameof(dailyRunService));
+            _zLSettingsService = zLSettingsService ?? throw new ArgumentNullException(nameof(zLSettingsService));
         }
 
         [HttpGet]
@@ -30,11 +30,11 @@ namespace WebExtension.Controllers
         }
         [HttpPost]
         [Route("UpdateZiplingoEventSettings")]
-        public IActionResult UpdateZiplingoEventSettings(ZiplingoEventSettingRequest request)
+        public IActionResult UpdateZiplingoEventSettings(ZiplingoEventSettingsRequest request)
         {
             try
             {
-                _ziplingoEngagementRepository.UpdateEventSetting(request);
+                _zLSettingsService.UpdateEventSetting(request);
                 return Ok();
             }
             catch (Exception ex)
@@ -44,11 +44,11 @@ namespace WebExtension.Controllers
         }
         [HttpPost]
         [Route("UpdateZiplingoEngagementSettings")]
-        public IActionResult UpdateZiplingoEngagementSettings(ZiplingoEngagementSettings request)
+        public IActionResult UpdateZiplingoEngagementSettings(ZiplingoEngagementSettingsRequest request)
         {
             try
             {
-                _ziplingoEngagementRepository.UpdateSettings(request);
+                _zLSettingsService.UpdateSettings(request);
                 return Ok();
             }
             catch (Exception ex)
@@ -62,7 +62,7 @@ namespace WebExtension.Controllers
         {
             try
             {
-               var res= _ziplingoEngagementRepository.GetEventSettingsList();
+               var res= _zLSettingsService.GetEventSettingsList();
                 return Ok(res);
             }
             catch (Exception ex)

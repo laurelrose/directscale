@@ -3,7 +3,6 @@ using Microsoft.AspNetCore.Mvc;
 using System;
 using WebExtension.Repositories;
 using WebExtension.Services.DailyRun;
-using WebExtension.Services.ZiplingoEngagementService;
 
 namespace WebExtension.Hooks
 {
@@ -11,13 +10,11 @@ namespace WebExtension.Hooks
     [ApiController]
     public class DailyRunWebHookController : ControllerBase
     {
-        private readonly IZiplingoEngagementService _ziplingoEngagementService;
         private readonly IDailyRunService _dailyRunService;
         private readonly ICustomLogRepository _customLogRepository;
 
-        public DailyRunWebHookController(IZiplingoEngagementService ziplingoEngagementService, IDailyRunService dailyRunService, ICustomLogRepository customLogRepository)
+        public DailyRunWebHookController(IDailyRunService dailyRunService, ICustomLogRepository customLogRepository)
         {
-            _ziplingoEngagementService = ziplingoEngagementService ?? throw new ArgumentNullException(nameof(ziplingoEngagementService));
             _dailyRunService = dailyRunService ?? throw new ArgumentNullException(nameof(dailyRunService));
             _customLogRepository = customLogRepository ?? throw new ArgumentNullException(nameof(customLogRepository));
         }

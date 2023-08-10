@@ -4,21 +4,21 @@ using DirectScale.Disco.Extension.Services;
 using System;
 using System.Threading.Tasks;
 using WebExtension.Repositories;
-using WebExtension.Services.ZiplingoEngagementService;
+using ZiplingoEngagement.Services.Interface;
 
 namespace WebExtension.Hooks.Associate
 {
     public class UpdateAssociateHook : IHook<UpdateAssociateHookRequest, UpdateAssociateHookResponse>
     {
-        private readonly IZiplingoEngagementService _ziplingoEngagementService;
         private readonly IAssociateService _associateService;
         private readonly ICustomLogRepository _customLogRepository;
+        private readonly IZLAssociateService _zlassociateService;
 
-        public UpdateAssociateHook(ICustomLogRepository customLogRepository, IZiplingoEngagementService ziplingoEngagementService, IAssociateService associateService)
+        public UpdateAssociateHook(ICustomLogRepository customLogRepository, IAssociateService associateService, IZLAssociateService zlassociateService)
         {
-            _ziplingoEngagementService = ziplingoEngagementService ?? throw new ArgumentNullException(nameof(ziplingoEngagementService));
             _associateService = associateService ?? throw new ArgumentNullException(nameof(associateService));
             _customLogRepository = customLogRepository ?? throw new ArgumentNullException(nameof(customLogRepository));
+            _zlassociateService = zlassociateService ?? throw new ArgumentNullException(nameof(zlassociateService));
 
         }
 
@@ -32,15 +32,15 @@ namespace WebExtension.Hooks.Associate
                     // Call AssociateTypeChange Trigger
                         var OldAssociateType = await _associateService.GetAssociateTypeName(request.OldAssociateInfo.AssociateBaseType);
                         var UpdatedAssociateType = await _associateService.GetAssociateTypeName(request.UpdatedAssociateInfo.AssociateBaseType);
-                        _ziplingoEngagementService.UpdateAssociateType(request.UpdatedAssociateInfo.AssociateId, OldAssociateType, UpdatedAssociateType, request.UpdatedAssociateInfo.AssociateBaseType);                        
+                    _zlassociateService.AssociateTypeChange(request.UpdatedAssociateInfo.AssociateId, OldAssociateType, UpdatedAssociateType, request.UpdatedAssociateInfo.AssociateBaseType);                        
                 }
                 if (request.OldAssociateInfo.StatusId != request.UpdatedAssociateInfo.StatusId)
                 {
-                    _ziplingoEngagementService.AssociateStatusChangeTrigger(request.UpdatedAssociateInfo.AssociateId, request.OldAssociateInfo.StatusId, request.UpdatedAssociateInfo.StatusId);
+                    _zlassociateService.AssociateStatusChange(request.UpdatedAssociateInfo.AssociateId, request.OldAssociateInfo.StatusId, request.UpdatedAssociateInfo.StatusId);
                 }
 
                 var associate1 = await _associateService.GetAssociate(request.UpdatedAssociateInfo.AssociateId);
-                _ziplingoEngagementService.UpdateContact(associate1);
+                _zlassociateService.UpdateContact(associate1);
             }
             catch (Exception ex)
             {
