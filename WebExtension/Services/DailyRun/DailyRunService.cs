@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Linq;
 using WebExtension.Repositories;
-using WebExtension.Services.ZiplingoEngagementService;
+using ZiplingoEngagement.Services.Interface;
 
 namespace WebExtension.Services.DailyRun
 {
@@ -16,14 +16,13 @@ namespace WebExtension.Services.DailyRun
     public class DailyRunService : IDailyRunService
     {
         private readonly IDailyRunRepository _dailyRunRepository;
-        private readonly IZiplingoEngagementService _ziplingoEngagementService;
+        private readonly IZLAssociateService _zlassociateService;
 
         public DailyRunService(
-            IDailyRunRepository dailyRunRepository,
-            IZiplingoEngagementService ziplingoEngagementService)
+            IDailyRunRepository dailyRunRepository,IZLAssociateService zlassociateService)
         {
             _dailyRunRepository = dailyRunRepository ?? throw new ArgumentNullException(nameof(dailyRunRepository));
-            _ziplingoEngagementService = ziplingoEngagementService ?? throw new ArgumentNullException(nameof(ziplingoEngagementService));
+            _zlassociateService = zlassociateService ?? throw new ArgumentNullException(nameof(zlassociateService));
         }
 
         public  void FiveDayRun()
@@ -31,7 +30,7 @@ namespace WebExtension.Services.DailyRun
             var autoships =  _dailyRunRepository.GetNextFiveDayAutoships();
             if (autoships.Count() > 0)
             {
-                _ziplingoEngagementService.FiveDayRunTrigger(autoships);
+                _zlassociateService.FiveDayRun(autoships);
             }
         }
 
@@ -40,19 +39,19 @@ namespace WebExtension.Services.DailyRun
             var expiryCreditCardInfoBefore30Days =  _dailyRunRepository.GetCreditCardInfoBefore30Days();
             if (expiryCreditCardInfoBefore30Days.Count() > 0)
             {
-                _ziplingoEngagementService.ExpirationCardTrigger(expiryCreditCardInfoBefore30Days);
+                _zlassociateService.ExpirationCard(expiryCreditCardInfoBefore30Days);
             }
         }
 
         public void ExecuteCommissionEarned()
         {
-            _ziplingoEngagementService.ExecuteCommissionEarned();
+            _zlassociateService.ExecuteCommissionEarned();
         }
 
         public void GetAssociateStatuses()
         {
             var associateStatuses = _dailyRunRepository.GetAssociateStatuses();
-            _ziplingoEngagementService.AssociateStatusSync(associateStatuses);
+            _zlassociateService.AssociateStatusSync(associateStatuses);
         }
     }
 }

@@ -3,17 +3,17 @@ using DirectScale.Disco.Extension.Hooks.Associates.Enrollment;
 using System;
 using DirectScale.Disco.Extension;
 using System.Threading.Tasks;
-using WebExtension.Services.ZiplingoEngagementService;
+using ZiplingoEngagement.Services.Interface;
 
 namespace WebExtension.Hooks.Associate
 {
     public class WriteApplication : IHook<WriteApplicationHookRequest, WriteApplicationHookResponse>
     {
-        private readonly IZiplingoEngagementService _ziplingoEngagementService;
+        private readonly IZLAssociateService _zlassociateService;
 
-        public WriteApplication(IZiplingoEngagementService ziplingoEngagementService)
+        public WriteApplication( IZLAssociateService zlassociateService)
         {
-            _ziplingoEngagementService = ziplingoEngagementService ?? throw new ArgumentNullException(nameof(ziplingoEngagementService));
+            _zlassociateService = zlassociateService ?? throw new ArgumentNullException(nameof(zlassociateService));
         }
 
         public Task<WriteApplicationHookResponse> Invoke(WriteApplicationHookRequest request, Func<WriteApplicationHookRequest, Task<WriteApplicationHookResponse>> func)
@@ -21,7 +21,7 @@ namespace WebExtension.Hooks.Associate
             var response = func(request);
             try
             {
-                _ziplingoEngagementService.CreateContact(request.Application, response.Result.ApplicationResponse);
+                _zlassociateService.CreateContact(request.Application, response.Result.ApplicationResponse);
                 return response;
             }
             catch (Exception e)

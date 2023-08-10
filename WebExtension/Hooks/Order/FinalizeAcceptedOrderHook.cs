@@ -8,31 +8,34 @@ using System.Threading.Tasks;
 using WebExtension.Repositories;
 using WebExtension.Services;
 using WebExtension.Services.RewardPoints;
-using WebExtension.Services.ZiplingoEngagementService;
+using ZiplingoEngagement.Services.Interface;
 
 namespace WebExtension.Hooks.Order
 {
     public class FinalizeAcceptedOrderHook : IHook<FinalizeAcceptedOrderHookRequest, FinalizeAcceptedOrderHookResponse>
     {
-        private readonly IZiplingoEngagementService _ziplingoEngagementService;
         private readonly IOrderService _orderService;
         private readonly ICustomLogRepository _customLogRepository;
         private readonly IOrderWebService _orderWebService;
         private readonly IRewardPointService _rewardPointService;
+        private readonly IZLAssociateService _zlassociateService;
+        private readonly IZLOrderZiplingoService _zlorderService;
 
         public FinalizeAcceptedOrderHook(
             ICustomLogRepository customLogRepository,
-            IZiplingoEngagementService ziplingoEngagementService,
             IOrderService orderService,
             IOrderWebService orderWebService,
-            IRewardPointService rewardPointService
+            IRewardPointService rewardPointService,
+            IZLOrderZiplingoService zlorderService,
+             IZLAssociateService zlassociateService
         )
         {
-            _ziplingoEngagementService = ziplingoEngagementService ?? throw new ArgumentNullException(nameof(ziplingoEngagementService));
             _orderService = orderService ?? throw new ArgumentNullException(nameof(orderService));
             _customLogRepository = customLogRepository ?? throw new ArgumentNullException(nameof(customLogRepository));
             _orderWebService = orderWebService ?? throw new ArgumentNullException(nameof(orderWebService));
             _rewardPointService = rewardPointService ?? throw new ArgumentNullException(nameof(rewardPointService));
+            _zlorderService = zlorderService ?? throw new ArgumentNullException(nameof(zlorderService));
+            _zlassociateService = zlassociateService ?? throw new ArgumentNullException(nameof(zlassociateService));
         }
 
         public async Task<FinalizeAcceptedOrderHookResponse> Invoke(FinalizeAcceptedOrderHookRequest request, Func<FinalizeAcceptedOrderHookRequest, Task<FinalizeAcceptedOrderHookResponse>> func)
@@ -43,20 +46,20 @@ namespace WebExtension.Hooks.Order
                 DirectScale.Disco.Extension.Order order = await _orderService.GetOrderByOrderNumber(request.Order.OrderNumber);
                 if (order.OrderType == OrderType.Enrollment)
                 {
-                    _ziplingoEngagementService.CreateEnrollContact(order);
+                    _zlassociateService.CreateEnrollContact(order);
                 }
 
                 if (order.OrderType == OrderType.Autoship && (order.Status == OrderStatus.Declined || order.Status == OrderStatus.FraudRejected))
                 {
-                    _ziplingoEngagementService.CallOrderZiplingoEngagementTrigger(order, "AutoShipFailed", true);
+                    _zlorderService.CallOrderZiplingoEngagement(order, "AutoShipFailed", true);
                 }
                 if (order.Status == OrderStatus.Paid || order.IsPaid)
                 {
                     var totalOrders = _orderService.GetOrdersByAssociateId(order.AssociateId, "").Result;
                     if (totalOrders.Length == 1)
                     {
-                        _ziplingoEngagementService.CallOrderZiplingoEngagementTrigger(order, "FirstOrderCreated", false);
-                        _ziplingoEngagementService.CallOrderZiplingoEngagementTrigger(order, "OrderCreated", false);
+                        _zlorderService.CallOrderZiplingoEngagement(order, "FirstOrderCreated", false);
+                        _zlorderService.CallOrderZiplingoEngagement(order, "OrderCreated", false);
 
                         //
                         #region #3159 Trigger for Reward Point Earned for Laurel Rose
@@ -65,7 +68,7 @@ namespace WebExtension.Hooks.Order
                     }
                     else
                     {
-                        _ziplingoEngagementService.CallOrderZiplingoEngagementTrigger(order, "OrderCreated", false);
+                        _zlorderService.CallOrderZiplingoEngagement(order, "OrderCreated", false);
                         //
                         #region #3159 Trigger for Reward Point Earned for Laurel Rose
                         //_ziplingoEngagementService.CallOrderZiplingoEngagementTrigger(order, "RewardPointEarned", false);
@@ -80,7 +83,7 @@ namespace WebExtension.Hooks.Order
                 var KIT_Kpi = await _orderWebService.GetKpi(order.AssociateId, "KIT");
                 if (KIT_Kpi != null && KIT_Kpi.Value == 0 && kitLevelFiveSkuList.Any(x => orderItemSkuList.Any(y => y == x)))
                 {
-                    _ziplingoEngagementService.CallOrderZiplingoEngagementTrigger(order, "InfinityBottlesEarned", true);
+                    _zlorderService.CallOrderZiplingoEngagement(order, "InfinityBottlesEarned", true);
                 }
                 #endregion
 

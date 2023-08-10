@@ -10,8 +10,8 @@ using System.Threading.Tasks;
 using WebExtension.Helper.Interface;
 using WebExtension.Helper.Models;
 using WebExtension.Models;
-using WebExtension.Services.ZiplingoEngagementService;
-using WebExtension.Services.ZiplingoEngagementService.Model;
+using ZiplingoEngagement.Models.Settings;
+using ZiplingoEngagement.Services.Interface;
 
 namespace WebExtension.Controllers
 {
@@ -31,18 +31,18 @@ namespace WebExtension.Controllers
         ////private readonly ISettingsService _settingsService;
         //
         private readonly ICommonService _commonService;
-        private readonly IZiplingoEngagementRepository _ziplingoEngagementRepository;
-        public CustomPageController(ICommonService commonService, IZiplingoEngagementRepository ziplingoEngagementRepository)
+        private readonly IZLSettingsService _zLSettingsService;
+        public CustomPageController(ICommonService commonService, IZLSettingsService zLSettingsService)
         {
             
             _commonService = commonService ?? throw new ArgumentNullException(nameof(commonService));
-            _ziplingoEngagementRepository= ziplingoEngagementRepository ?? throw new ArgumentNullException(nameof(ziplingoEngagementRepository));
+            _zLSettingsService = zLSettingsService ?? throw new ArgumentNullException(nameof(zLSettingsService));
           
         }
         public IActionResult ZiplingoEngagementSetting()
         {
-            ZiplingoEngagementSettings _settings = _ziplingoEngagementRepository.GetSettings();
-            List<ZiplingoEventSettings> _eventSettings = _ziplingoEngagementRepository.GetEventSettingsList();
+            ZiplingoEngagementSettings _settings = _zLSettingsService.GetSettings();
+            List<ZiplingoEventSettings> _eventSettings = _zLSettingsService.GetEventSettingsList().GetAwaiter().GetResult();
             resObj viewDataSend = new resObj() { settings = _settings, eventSettings = _eventSettings };
             ViewBag.Message = viewDataSend;
             return View();

@@ -8,7 +8,7 @@ using System.Threading.Tasks;
 using WebExtension.Hooks.Order;
 using WebExtension.Models;
 using WebExtension.Repositories;
-using WebExtension.Services.ZiplingoEngagementService;
+using ZiplingoEngagement.Services.Interface;
 
 namespace WebExtension.Services
 {
@@ -32,13 +32,13 @@ namespace WebExtension.Services
         private readonly ITicketService _ticketService;
         private readonly ICustomLogRepository _customLogRepository;
         private readonly ITreeService _treeService;
-        private readonly IZiplingoEngagementService _ziplingoEngagementService;
+        private readonly IZLOrderZiplingoService _zlorderService;
 
         public OrderWebService(IOrderWebRepository orderWebRepository,
             IOrderService orderService, ICurrencyService currencyService, IStatsService statsService, IAssociateService associateService,
             IRewardPointsService rewardPointsService,
             ITicketService ticketService,
-            ICustomLogRepository customLogRepository, ITreeService treeService, IZiplingoEngagementService ziplingoEngagementService)
+            ICustomLogRepository customLogRepository, ITreeService treeService, IZLOrderZiplingoService zlorderService)
         {
             _orderWebRepository = orderWebRepository ?? throw new ArgumentNullException(nameof(orderWebRepository));
             _orderService = orderService ?? throw new ArgumentNullException(nameof(orderService));
@@ -49,7 +49,7 @@ namespace WebExtension.Services
             _ticketService = ticketService ?? throw new ArgumentNullException(nameof(ticketService));
             _customLogRepository = customLogRepository ?? throw new ArgumentNullException(nameof(customLogRepository));
             _treeService = treeService ?? throw new ArgumentNullException(nameof(treeService));
-            _ziplingoEngagementService = ziplingoEngagementService ?? throw new ArgumentNullException(nameof(ziplingoEngagementService));
+            _zlorderService = zlorderService ?? throw new ArgumentNullException(nameof(zlorderService));
         }
 
         public async Task<List<OrderViewModel>> GetFilteredOrders(string search, DateTime beginDate, DateTime endDate)
@@ -182,7 +182,7 @@ namespace WebExtension.Services
                                    order.OrderNumber);
                                 if (r != null && sponsorId != 0)
                                 {
-                                    _ziplingoEngagementService.CallOrderZiplingoEngagementTrigger(order, "RewardPointEarned", false, true, sponsorId); //Reward point variable true
+                                    _zlorderService.CallOrderZiplingoEngagement(order, "RewardPointEarned", false); //Reward point variable true
 
                                     var t = await _ticketService.LogEvent(sponsorId,
                                     $"Current RWD account balance {point} RWD, " +

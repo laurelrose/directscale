@@ -2,25 +2,27 @@
 using DirectScale.Disco.Extension.Hooks;
 using DirectScale.Disco.Extension.Services;
 using System;
-using WebExtension.Services.ZiplingoEngagementService;
 using WebExtension.Services;
 using Newtonsoft.Json;
 using System.Threading.Tasks;
+using ZiplingoEngagement.Services.Interface;
 
 namespace WebExtension.Hooks.Autoship
 {
     public class UpdateAutoshipHook : IHook<UpdateAutoshipHookRequest, UpdateAutoshipHookResponse>
     {
         private readonly ICustomLogService _customLogService;
-        private readonly IZiplingoEngagementService _ziplingoEngagementService;
         private readonly IAutoshipService _autoshipService;
         private readonly IAssociateService _associateService;
-        public UpdateAutoshipHook(ICustomLogService customLogService, IZiplingoEngagementService ziplingoEngagementService, IAutoshipService autoshipService, IAssociateService associateService)
+        private readonly IZLAssociateService _zlassociateService;
+        private readonly IZLOrderZiplingoService _zlorderService;
+        public UpdateAutoshipHook(ICustomLogService customLogService, IAutoshipService autoshipService, IAssociateService associateService, IZLAssociateService zlassociateService, IZLOrderZiplingoService zlorderService)
         {
             _customLogService = customLogService ?? throw new ArgumentNullException(nameof(customLogService));
-            _ziplingoEngagementService = ziplingoEngagementService ?? throw new ArgumentNullException(nameof(ziplingoEngagementService));
             _autoshipService = autoshipService ?? throw new ArgumentNullException(nameof(autoshipService));
             _associateService = associateService;
+            _zlassociateService = zlassociateService ?? throw new ArgumentNullException(nameof(zlassociateService));
+            _zlorderService = zlorderService ?? throw new ArgumentNullException(nameof(zlorderService));
         }
 
         public async Task<UpdateAutoshipHookResponse> Invoke(UpdateAutoshipHookRequest request, Func<UpdateAutoshipHookRequest, Task<UpdateAutoshipHookResponse>> func)
@@ -40,9 +42,9 @@ namespace WebExtension.Hooks.Autoship
             try
             {
                 var updatedAutoshipInfo = await _autoshipService.GetAutoship(request.AutoshipInfo.AutoshipId);
-                _ziplingoEngagementService.UpdateAutoshipTrigger(updatedAutoshipInfo);
+                _zlorderService.UpdateAutoship(updatedAutoshipInfo);
                 var associateSummary = await _associateService.GetAssociate(request.AutoshipInfo.AssociateId);
-                _ziplingoEngagementService.UpdateContact(associateSummary);
+                _zlassociateService.UpdateContact(associateSummary);
             }
             catch (Exception ex)
             {

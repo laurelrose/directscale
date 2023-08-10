@@ -5,21 +5,23 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using WebExtension.Services.ZiplingoEngagementService;
+using ZiplingoEngagement.Services.Interface;
 
 namespace WebExtension.Hooks.Autoship
 {
     public class CreateAutoshipHook : IHook<CreateAutoshipHookRequest, CreateAutoshipHookResponse>
     {
-        private readonly IZiplingoEngagementService _ziplingoEngagementService;
         private readonly IAssociateService _associateService;
         private readonly IAutoshipService _autoshipService;
+        private readonly IZLAssociateService _zlassociateService;
+        private readonly IZLOrderZiplingoService _zlorderService;
 
-        public CreateAutoshipHook(IZiplingoEngagementService ziplingoEngagementService, IAssociateService associateService, IAutoshipService autoshipService)
+        public CreateAutoshipHook( IAssociateService associateService, IAutoshipService autoshipService, IZLAssociateService zlassociateService, IZLOrderZiplingoService zlorderService)
         {
-            _ziplingoEngagementService = ziplingoEngagementService ?? throw new ArgumentNullException(nameof(ziplingoEngagementService));
             _associateService = associateService ?? throw new ArgumentNullException(nameof(associateService));
             _autoshipService = autoshipService ?? throw new ArgumentNullException(nameof(autoshipService));
+            _zlassociateService = zlassociateService ?? throw new ArgumentNullException(nameof(zlassociateService));
+            _zlorderService = zlorderService ?? throw new ArgumentNullException(nameof(zlorderService));
         }
         public async Task<CreateAutoshipHookResponse> Invoke(CreateAutoshipHookRequest request, Func<CreateAutoshipHookRequest, Task<CreateAutoshipHookResponse>> func)
         {
@@ -28,9 +30,9 @@ namespace WebExtension.Hooks.Autoship
             try 
             {
                 var autoshipInfo = await _autoshipService.GetAutoship(response.AutoshipId);
-                _ziplingoEngagementService.CreateAutoshipTrigger(autoshipInfo);
+                _zlorderService.CreateAutoship(autoshipInfo);
                 var associateSummary = await _associateService.GetAssociate(autoshipInfo.AssociateId);
-                _ziplingoEngagementService.UpdateContact(associateSummary);
+                _zlassociateService.UpdateContact(associateSummary);
             }
             catch(Exception ex)
             {

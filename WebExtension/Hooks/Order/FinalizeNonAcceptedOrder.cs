@@ -3,17 +3,18 @@ using DirectScale.Disco.Extension.Hooks;
 using DirectScale.Disco.Extension.Hooks.Orders;
 using System;
 using System.Threading.Tasks;
-using WebExtension.Services.ZiplingoEngagementService;
+using ZiplingoEngagement.Services.Interface;
 
 namespace WebExtension.Hooks.Order
 {
     public class FinalizeNonAcceptedOrder : IHook<FinalizeNonAcceptedOrderHookRequest, FinalizeNonAcceptedOrderHookResponse>
     {
-        private readonly IZiplingoEngagementService _ziplingoEngagementService;
 
-        public FinalizeNonAcceptedOrder(IZiplingoEngagementService ziplingoEngagementService)
+        private readonly IZLOrderZiplingoService _zlorderService;
+
+        public FinalizeNonAcceptedOrder(IZLOrderZiplingoService zlorderService)
         {
-            _ziplingoEngagementService = ziplingoEngagementService ?? throw new ArgumentNullException(nameof(ziplingoEngagementService));
+            _zlorderService = zlorderService ?? throw new ArgumentNullException(nameof(zlorderService));
         }
         public async Task<FinalizeNonAcceptedOrderHookResponse> Invoke(FinalizeNonAcceptedOrderHookRequest request, Func<FinalizeNonAcceptedOrderHookRequest, Task<FinalizeNonAcceptedOrderHookResponse>> func)
         {
@@ -22,11 +23,11 @@ namespace WebExtension.Hooks.Order
             {
                 if (request.Order.OrderType == OrderType.Autoship)
                 {
-                    _ziplingoEngagementService.CallOrderZiplingoEngagementTrigger(request.Order, "AutoShipFailed", true);
+                    _zlorderService.CallOrderZiplingoEngagement(request.Order, "AutoShipFailed", true);
                 }
                 else
                 {
-                    _ziplingoEngagementService.CallOrderZiplingoEngagementTrigger(request.Order, "OrderFailed", true);
+                    _zlorderService.CallOrderZiplingoEngagement(request.Order, "OrderFailed", true);
                 }
             }
             catch (Exception ex)
