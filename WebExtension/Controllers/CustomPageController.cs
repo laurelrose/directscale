@@ -39,14 +39,14 @@ namespace WebExtension.Controllers
             _zLSettingsService = zLSettingsService ?? throw new ArgumentNullException(nameof(zLSettingsService));
           
         }
-        public IActionResult ZiplingoEngagementSetting()
-        {
-            ZiplingoEngagementSettings _settings = _zLSettingsService.GetSettings();
-            List<ZiplingoEventSettings> _eventSettings = _zLSettingsService.GetEventSettingsList().GetAwaiter().GetResult();
-            resObj viewDataSend = new resObj() { settings = _settings, eventSettings = _eventSettings };
-            ViewBag.Message = viewDataSend;
-            return View();
-        }
+        //public IActionResult ZiplingoEngagementSetting()
+        //{
+        //    ZiplingoEngagementSettings _settings = _zLSettingsService.GetSettings();
+        //    List<ZiplingoEventSettings> _eventSettings = _zLSettingsService.GetEventSettingsList().GetAwaiter().GetResult();
+        //    resObj viewDataSend = new resObj() { settings = _settings, eventSettings = _eventSettings };
+        //    ViewBag.Message = viewDataSend;
+        //    return View();
+        //}
         [ExtensionAuthorize]
         public async Task<IActionResult> CustomOrderReport()
         {

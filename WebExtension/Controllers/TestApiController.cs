@@ -28,34 +28,34 @@ namespace WebExtension.Controllers
             _dailyRunService.GetAssociateStatuses();
             return Ok();
         }
-        [HttpPost]
-        [Route("UpdateZiplingoEventSettings")]
-        public IActionResult UpdateZiplingoEventSettings(ZiplingoEventSettingsRequest request)
-        {
-            try
-            {
-                _zLSettingsService.UpdateEventSetting(request);
-                return Ok();
-            }
-            catch (Exception ex)
-            {
-                return BadRequest(ex);
-            }
-        }
-        [HttpPost]
-        [Route("UpdateZiplingoEngagementSettings")]
-        public IActionResult UpdateZiplingoEngagementSettings(ZiplingoEngagementSettingsRequest request)
-        {
-            try
-            {
-                _zLSettingsService.UpdateSettings(request);
-                return Ok();
-            }
-            catch (Exception ex)
-            {
-                return BadRequest(ex);
-            }
-        }
+        //[HttpPost]
+        //[Route("UpdateZiplingoEventSettings")]
+        //public IActionResult UpdateZiplingoEventSettings(ZiplingoEventSettingsRequest request)
+        //{
+        //    try
+        //    {
+        //        _zLSettingsService.UpdateEventSetting(request);
+        //        return Ok();
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        return BadRequest(ex);
+        //    }
+        //}
+        //[HttpPost]
+        //[Route("UpdateZiplingoEngagementSettings")]
+        //public IActionResult UpdateZiplingoEngagementSettings(ZiplingoEngagementSettingsRequest request)
+        //{
+        //    try
+        //    {
+        //        _zLSettingsService.UpdateSettings(request);
+        //        return Ok();
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        return BadRequest(ex);
+        //    }
+        //}
         [HttpGet]
         [Route("GetZiplingoEventSettings")]
         public IActionResult GetZiplingoEventSettings()
