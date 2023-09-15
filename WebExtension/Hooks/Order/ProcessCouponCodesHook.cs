@@ -126,8 +126,11 @@ namespace WebExtension.Hooks.Order
                                 var usedCoupons = response.OrderCoupons.UsedCoupons?.ToList() ?? new List<OrderCoupon>();
 
                                 var itemdetails = _itemService.GetLineItemById(itemFirm.ItemId, itemFirm.Quantity, request.Currency, "us", request.RegionId, (int)request.OrderType, associateInfo.PriceGroup, 1, "us").Result;
+                                _customLogRepository.SaveLog(request.AssociateId, 0, "ProcessCouponCodesHook",
+                                    $"ID {itemFirm.ItemId} QTY {itemFirm.Quantity} Currency {request.Currency} Region {request.RegionId} OrderType {(int)request.OrderType} PriceGroup {associateInfo.PriceGroup} ResultItem {itemdetails.ItemId}",
+                                    "", "", "", "", "");
 
-                                _customLogRepository.SaveLog(request.AssociateId, 0, "ProcessCouponCodesHook", $"ProcessCouponCodesHook.ApplyFirm2023: Item SKU {itemFirm.SKU} Qty: {itemFirm.Quantity} Total {itemdetails.ExtendedCost}", "", "", "", "", "");
+                                //_customLogRepository.SaveLog(request.AssociateId, 0, "ProcessCouponCodesHook", $"ProcessCouponCodesHook.ApplyFirm2023: Item SKU {itemFirm.SKU} Qty: {itemFirm.Quantity} Total {itemdetails.ExtendedCost}", "", "", "", "", "");
                                 
                                 var discountFirm2023 = itemdetails.ExtendedCost * 0.50;
 
@@ -141,7 +144,7 @@ namespace WebExtension.Hooks.Order
                                 {
                                     DiscountAmount = discountFirm2023
                                 });
-                                _customLogRepository.SaveLog(request.AssociateId, 0, "ProcessCouponCodesHook", $"ProcessCouponCodesHook.ApplyFirm2023: Coupon will be applied for {discountFirm2023}", "", "", "", "", "");
+                                //_customLogRepository.SaveLog(request.AssociateId, 0, "ProcessCouponCodesHook", $"ProcessCouponCodesHook.ApplyFirm2023: Coupon will be applied for {discountFirm2023}", "", "", "", "", "");
                                 //_logger.LogInformation($"ProcessCouponCodesHook.ApplyFirm2023: Coupon will be applied for {discountFirm2023}");
                                 response.OrderCoupons.DiscountTotal = response.OrderCoupons.DiscountTotal + discountFirm2023;
                                 response.OrderCoupons.UsedCoupons = usedCoupons.ToArray();
@@ -149,8 +152,8 @@ namespace WebExtension.Hooks.Order
                         }
                     }
                 }
-                else
-                    _customLogRepository.SaveLog(request.AssociateId, 0, "ProcessCouponCodesHook", $"ProcessCouponCodesHook.ApplyFirm2023: Current AssociateID {associateInfo.BackOfficeId} CustomerID {associateInfo.AssociateId}", "", "", "", "", "");
+                /*else
+                    _customLogRepository.SaveLog(request.AssociateId, 0, "ProcessCouponCodesHook", $"ProcessCouponCodesHook.ApplyFirm2023: Current AssociateID {associateInfo.BackOfficeId} CustomerID {associateInfo.AssociateId}", "", "", "", "", "");*/
             }
             catch (Exception ex)
             {
