@@ -15,7 +15,7 @@ namespace WebExtension.Hooks.Order
     public class ProcessCouponCodesHook : IHook<ProcessCouponCodesHookRequest, ProcessCouponCodesHookResponse>
     {
         public static string ShareAndSave = "Share Rewards from ";
-        public static string Firm2023 = "Firm2023";
+        public const string Firm2023 = "Firm2023";
         public string SourceName = "";
         public const int ShareAndSaveCouponId = -999;
         private readonly IAssociateService _associateService;
@@ -91,24 +91,26 @@ namespace WebExtension.Hooks.Order
                 var associateInfo = _associateService.GetAssociate(request.AssociateId).Result;
 
                 // Check CustomerID in list
-                if(CustomerIDs.Contains(associateInfo.BackOfficeId))
+                //if(CustomerIDs.Contains(associateInfo.BackOfficeId))
+                if (associateInfo.BackOfficeId == "19124")
                 {
                     // Validate OrderTypes Standard and AutoShip
-                    if (request.OrderType == OrderType.Standard || request.OrderType == OrderType.Autoship) 
+                    if (request.OrderType == OrderType.Standard || request.OrderType == OrderType.Autoship)
                     {
                         // Look up SKU 00860009468849 / ItemID 25
-                        var itemFirm =  request.LineItems.Where(i=>i.ItemId == 25).FirstOrDefault();
+                        var itemFirm = request.LineItems.Where(i => i.ItemId == 25).FirstOrDefault();
 
-                        if(itemFirm != null)
+                        if (itemFirm != null)
                         {
+                            _logger.LogInformation($"ProcessCouponCodesHook.ApplyFirm2023: Item SKU {itemFirm.SKU} Qty: {itemFirm.Quantity} Total {itemFirm.ExtendedCost}");
                             bool CouponCanBeUsed = true;
                             var couponUsage = _couponService.GetAssociateCouponUsage(request.AssociateId).Result.ToList();
                             if (couponUsage.Count > 0)
                             {
                                 // Get usage of Firm2023 coupon by associate
-                                var firmCouponUsage = couponUsage.Where(c => c.Info.Code == Firm2023).ToList();                                
+                                var firmCouponUsage = couponUsage.Where(c => c.Info.Code == Firm2023).ToList();
 
-                                foreach (var firmCoupon in firmCouponUsage) 
+                                foreach (var firmCoupon in firmCouponUsage)
                                 {
                                     var startOfTheMonth = new DateTime(DateTime.Now.Year, DateTime.Now.Month, 1);
                                     //If coupon has been redeemed this month, coupon cannot be used in this order
@@ -116,9 +118,10 @@ namespace WebExtension.Hooks.Order
                                         CouponCanBeUsed = false;
                                 }
                             }
-                            
-                            if(CouponCanBeUsed)
+
+                            if (CouponCanBeUsed)
                             {
+                                
                                 var usedCoupons = response.OrderCoupons.UsedCoupons?.ToList() ?? new List<OrderCoupon>();
 
                                 var discountFirm2023 = itemFirm.ExtendedCost * 0.50;
@@ -133,12 +136,16 @@ namespace WebExtension.Hooks.Order
                                 {
                                     DiscountAmount = discountFirm2023
                                 });
+
+                                _logger.LogInformation($"ProcessCouponCodesHook.ApplyFirm2023: Coupon will be applied for {discountFirm2023}");
                                 response.OrderCoupons.DiscountTotal = response.OrderCoupons.DiscountTotal + discountFirm2023;
                                 response.OrderCoupons.UsedCoupons = usedCoupons.ToArray();
                             }
                         }
                     }
                 }
+                else
+                    _logger.LogInformation($"ProcessCouponCodesHook.ApplyFirm2023: Current AssociateID {associateInfo.BackOfficeId} CustomerID {associateInfo.AssociateId}");
             }
             catch (Exception ex)
             {

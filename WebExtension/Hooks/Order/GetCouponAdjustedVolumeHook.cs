@@ -20,6 +20,7 @@ namespace WebExtension.Hooks.Order
         public async Task<GetCouponAdjustedVolumeHookResponse> Invoke(GetCouponAdjustedVolumeHookRequest request, Func<GetCouponAdjustedVolumeHookRequest, Task<GetCouponAdjustedVolumeHookResponse>> func)
         {
             var result = await func(request);
+            
             try
             {
                 var shareAndSaveCoupon = request.Totals[0].Coupons.UsedCoupons
@@ -42,6 +43,31 @@ namespace WebExtension.Hooks.Order
                 _customLogRepository.CustomErrorLog(request.Totals[0].OrderNumber, 0, "Error in GetCouponAdjustedVolumeHookResponse", "Error : " + e.Message);
                 _logger.LogInformation($"Error adjust volume AutoshipCoupon orderNumber: {request?.Totals[0]?.OrderNumber} {e.Message}");
             }
+
+            try
+            {
+                var firm2023Coupon = request.Totals[0].Coupons.UsedCoupons
+                           .FirstOrDefault(x => x.Info.Code == ProcessCouponCodesHook.Firm2023);
+
+                if (firm2023Coupon != null)
+                {
+                    if (result.CouponAdjustedVolume.Qv > 0)
+                    {
+                        var qvAmount = result.CouponAdjustedVolume.Qv - firm2023Coupon.Info.Discount < 0
+                            ? 0
+                            : result.CouponAdjustedVolume.Qv - firm2023Coupon.Info.Discount;
+
+                        result.CouponAdjustedVolume.Qv = qvAmount;
+                    }
+                }
+            }
+            catch (Exception e)
+            {
+                _customLogRepository.CustomErrorLog(request.Totals[0].OrderNumber, 0, "Error in GetCouponAdjustedVolumeHookResponse", "Error : " + e.Message);
+                _logger.LogInformation($"Error adjust volume Coupon orderNumber: {request?.Totals[0]?.OrderNumber} {e.Message}");
+            }
+
+
             return result;
         }
     }
