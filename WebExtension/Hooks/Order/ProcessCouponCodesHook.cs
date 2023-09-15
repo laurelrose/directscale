@@ -103,7 +103,7 @@ namespace WebExtension.Hooks.Order
                         if (itemFirm != null)
                         {
                             //_logger.LogInformation($"ProcessCouponCodesHook.ApplyFirm2023: Item SKU {itemFirm.SKU} Qty: {itemFirm.Quantity} Total {itemFirm.ExtendedCost}");
-                            _customLogRepository.SaveLog(request.AssociateId, 0, "ProcessCouponCodesHook", $"ProcessCouponCodesHook.ApplyFirm2023: Item SKU {itemFirm.SKU} Qty: {itemFirm.Quantity} Total {itemFirm.ExtendedCost}", "", "", "", "", "");
+                            
                             bool CouponCanBeUsed = true;
                             var couponUsage = _couponService.GetAssociateCouponUsage(request.AssociateId).Result.ToList();
                             if (couponUsage.Count > 0)
@@ -125,7 +125,11 @@ namespace WebExtension.Hooks.Order
 
                                 var usedCoupons = response.OrderCoupons.UsedCoupons?.ToList() ?? new List<OrderCoupon>();
 
-                                var discountFirm2023 = itemFirm.ExtendedCost * 0.50;
+                                var itemdetails = _itemService.GetLineItemById(itemFirm.ItemId, itemFirm.Quantity, request.Currency, "us", request.RegionId, (int)request.OrderType, associateInfo.PriceGroup, 1, "us").Result;
+
+                                _customLogRepository.SaveLog(request.AssociateId, 0, "ProcessCouponCodesHook", $"ProcessCouponCodesHook.ApplyFirm2023: Item SKU {itemFirm.SKU} Qty: {itemFirm.Quantity} Total {itemdetails.ExtendedCost}", "", "", "", "", "");
+                                
+                                var discountFirm2023 = itemdetails.ExtendedCost * 0.50;
 
                                 usedCoupons.Add(new OrderCoupon(new Coupon
                                 {
