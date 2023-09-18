@@ -19,6 +19,7 @@ namespace WebExtension.Services
         Task<CommissionStats> GetCustomerStats(int associateId);
         Task<Kpi> GetKpi(int associateId, string kpiName);
         void FinalizeAcceptedOrderAfter(DirectScale.Disco.Extension.Order order);
+        int GetCouponUsageByAssociateID(int associateId,int couponID, DateTime stardate,DateTime enddate);
     }
     public class OrderWebService : IOrderWebService
     {
@@ -224,6 +225,11 @@ namespace WebExtension.Services
                 //throw new Exception(ex.Message);
                 return 1;
             }
+        }
+
+        public int GetCouponUsageByAssociateID(int associateId, int couponID, DateTime stardate, DateTime enddate)
+        {
+            return _orderWebRepository.GetCouponUsageByAssociateID(associateId, couponID, stardate, enddate);
         }
     }
 }
