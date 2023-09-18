@@ -15,6 +15,7 @@ namespace WebExtension.Repositories
         List<string> GetKitLevelFiveSkuList();
         int GetEnrollmentSponsorId(int associateId);
         List<CouponUsageDataModel> GetCouponUsageByOrderId(int orderNumber);
+        int GetCouponUsageByAssociateID(int associateId,int couponID,DateTime startdate, DateTime enddate);
     }
     public class OrderWebRepository : IOrderWebRepository
     {
@@ -125,5 +126,25 @@ namespace WebExtension.Repositories
             }
         }
 
+        public int GetCouponUsageByAssociateID(int associateId,int couponID, DateTime startdate, DateTime enddate)
+        {
+            var parameters = new
+            {
+                AssociateID = associateId,CouponID = couponID, Startdate = startdate, Enddate = enddate
+            };
+
+            var sql = @"SELECT count(*) from ord_order o left join ord_ordertotals ot
+                    on o.recordnumber = ot.ordernumber
+                    left join ord_couponusage cu
+                    on cu.OrderTotalID = ot.recordnumber
+                    where o.distributorid = @AssociateID 
+                    and 
+                    couponid=@CouponID
+                    and dateused between @StartDate and @EndDate";
+            using (var connection = new SqlConnection(_dataService.GetClientConnectionString().Result))
+            {
+                return connection.QueryFirstOrDefault<int>(sql, parameters);
+            }
+        }
     }
 }

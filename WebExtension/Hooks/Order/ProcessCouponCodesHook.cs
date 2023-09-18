@@ -9,6 +9,7 @@ using DirectScale.Disco.Extension.Services;
 using Microsoft.Extensions.Logging;
 using WebExtension.Repositories;
 using Azure;
+using WebExtension.Services;
 
 namespace WebExtension.Hooks.Order
 {
@@ -18,21 +19,20 @@ namespace WebExtension.Hooks.Order
         public const string Firm2023 = "Firm2023";
         public string SourceName = "";
         public const int ShareAndSaveCouponId = -999;
+        public const int Firm2023CouponID = -998;
         private readonly IAssociateService _associateService;
         private readonly IRewardPointsService _rewardPointsService;
         private readonly ILogger<ProcessCouponCodesHook> _logger;
         private readonly ICustomLogRepository _customLogRepository;
-        private readonly ICouponService _couponService;
-        private readonly IItemService _itemService;
+        private readonly IOrderWebService _orderWebService;
         public ProcessCouponCodesHook(IAssociateService associateService,
-            IRewardPointsService rewardPointsService, ILogger<ProcessCouponCodesHook> loggingService, ICustomLogRepository customLogRepository, ICouponService couponService, IItemService itemService)
+            IRewardPointsService rewardPointsService, ILogger<ProcessCouponCodesHook> loggingService, ICustomLogRepository customLogRepository, ICouponService couponService, IOrderWebService orderWebService)
         {
             _associateService = associateService ?? throw new ArgumentNullException(nameof(associateService));
             _rewardPointsService = rewardPointsService ?? throw new ArgumentNullException(nameof(rewardPointsService));
             _logger = loggingService ?? throw new ArgumentNullException(nameof(loggingService));
-            _customLogRepository = customLogRepository ?? throw new ArgumentNullException(nameof(customLogRepository));
-            _couponService = couponService ?? throw new ArgumentNullException(nameof(couponService));
-            _itemService = itemService ?? throw new ArgumentNullException(nameof(itemService));
+            _customLogRepository = customLogRepository ?? throw new ArgumentNullException(nameof(customLogRepository));            
+            _orderWebService = orderWebService ?? throw new ArgumentNullException(nameof(orderWebService));
         }
         public async Task<ProcessCouponCodesHookResponse> Invoke(ProcessCouponCodesHookRequest request, Func<ProcessCouponCodesHookRequest, Task<ProcessCouponCodesHookResponse>> func)
         {
@@ -105,46 +105,31 @@ namespace WebExtension.Hooks.Order
                             //_logger.LogInformation($"ProcessCouponCodesHook.ApplyFirm2023: Item SKU {itemFirm.SKU} Qty: {itemFirm.Quantity} Total {itemFirm.ExtendedCost}");
                             
                             bool CouponCanBeUsed = true;
-                            var couponUsage = _couponService.GetAssociateCouponUsage(request.AssociateId).Result.ToList();
-                            if (couponUsage.Count > 0)
-                            {
-                                // Get usage of Firm2023 coupon by associate
-                                var firmCouponUsage = couponUsage.Where(c => c.Info.Code == Firm2023).ToList();
 
-                                foreach (var firmCoupon in firmCouponUsage)
-                                {
-                                    var startOfTheMonth = new DateTime(DateTime.Now.Year, DateTime.Now.Month, 1);
-                                    //If coupon has been redeemed this month, coupon cannot be used in this order
-                                    if (firmCoupon.DateUsed >= startOfTheMonth && firmCoupon.DateUsed < DateTime.Now)
-                                        CouponCanBeUsed = false;
-                                }
-                            }
+                            var startOfTheMonth = new DateTime(DateTime.Now.Year, DateTime.Now.Month, 1);
+                            var usage = _orderWebService.GetCouponUsageByAssociateID(request.AssociateId, Firm2023CouponID, startOfTheMonth, DateTime.Now);
+                            _customLogRepository.SaveLog(request.AssociateId, 0, "ProcessCouponCodesHook", $"Coupon has been used {usage} times this month", "", "", "", "", "");
+                            if (usage > 0)
+                                CouponCanBeUsed = false;
 
                             if (CouponCanBeUsed)
                             {
 
                                 var usedCoupons = response.OrderCoupons.UsedCoupons?.ToList() ?? new List<OrderCoupon>();
-
-                                /*var itemdetails = _itemService.GetLineItemById(itemFirm.ItemId, itemFirm.Quantity, request.Currency, "us", request.RegionId, (int)request.OrderType, associateInfo.PriceGroup, 1, "us").Result;
-                                _customLogRepository.SaveLog(request.AssociateId, 0, "ProcessCouponCodesHook",
-                                    $"ID {itemFirm.ItemId} QTY {itemFirm.Quantity} Currency {request.Currency} Region {request.RegionId} OrderType {(int)request.OrderType} PriceGroup {associateInfo.PriceGroup} ResultItem {itemdetails.ItemId}",
-                                    "", "", "", "", "");
-                                */
-                                //_customLogRepository.SaveLog(request.AssociateId, 0, "ProcessCouponCodesHook", $"ProcessCouponCodesHook.ApplyFirm2023: Item SKU {itemFirm.SKU} Qty: {itemFirm.Quantity} Total {itemdetails.ExtendedCost}", "", "", "", "", "");
-                                
+                               
                                 var discountFirm2023 = itemFirm.ExtendedPrice * 0.50;
 
                                 usedCoupons.Add(new OrderCoupon(new Coupon
                                 {
-                                    Code = ShareAndSave,
-                                    CouponId = ShareAndSaveCouponId,
+                                    Code = Firm2023,
+                                    CouponId = Firm2023CouponID,
                                     Discount = discountFirm2023
 
                                 })
                                 {
                                     DiscountAmount = discountFirm2023
                                 });
-                                _customLogRepository.SaveLog(request.AssociateId, 0, "ProcessCouponCodesHook", $"ProcessCouponCodesHook.ApplyFirm2023: Coupon will be applied for -${discountFirm2023}", "", "", "", "", "");
+                                _customLogRepository.SaveLog(request.AssociateId, 0, "ProcessCouponCodesHook", $"Coupon will be applied for -${discountFirm2023}", "", "", "", "", "");
                                 //_logger.LogInformation($"ProcessCouponCodesHook.ApplyFirm2023: Coupon will be applied for {discountFirm2023}");
                                 response.OrderCoupons.DiscountTotal = response.OrderCoupons.DiscountTotal + discountFirm2023;
                                 response.OrderCoupons.UsedCoupons = usedCoupons.ToArray();
