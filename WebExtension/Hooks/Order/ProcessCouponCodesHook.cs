@@ -91,8 +91,8 @@ namespace WebExtension.Hooks.Order
                 var associateInfo = _associateService.GetAssociate(request.AssociateId).Result;
 
                 // Check CustomerID in list
-                //if(CustomerIDs.Contains(associateInfo.BackOfficeId))
-                if (associateInfo.BackOfficeId == "19124")
+                if(CustomerIDs.Contains(associateInfo.BackOfficeId))
+                //if (associateInfo.BackOfficeId == "19124") for testing with single client, uncomment
                 {
                     // Validate OrderTypes Standard and AutoShip
                     if (request.OrderType == OrderType.Standard || request.OrderType == OrderType.Autoship)
@@ -114,7 +114,6 @@ namespace WebExtension.Hooks.Order
 
                             if (CouponCanBeUsed)
                             {
-
                                 var usedCoupons = response.OrderCoupons.UsedCoupons?.ToList() ?? new List<OrderCoupon>();
                                
                                 var discountFirm2023 = itemFirm.ExtendedPrice * 0.50;
