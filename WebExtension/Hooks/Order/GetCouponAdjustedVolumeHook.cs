@@ -50,15 +50,10 @@ namespace WebExtension.Hooks.Order
                            .FirstOrDefault(x => x.Info.Code == ProcessCouponCodesHook.Firm2023);
 
                 if (firm2023Coupon != null)
-                {
+                {                    
                     if (result.CouponAdjustedVolume.Qv > 0)
                     {
-                        var qvAmount = result.CouponAdjustedVolume.Qv - firm2023Coupon.Info.Discount < 0
-                            ? 0
-                            : result.CouponAdjustedVolume.Qv - firm2023Coupon.Info.Discount;
-                        await _customLogRepository.SaveLog(0, 0, "GetCouponAdjustedVolumeHook", $"OriginalDiscount {firm2023Coupon.Info.Discount} QV Discount{qvAmount} Adjusted Volume {result.CouponAdjustedVolume.Qv} / {result.CouponAdjustedVolume.Cv} ", "", "", "", "", "");
-                        result.CouponAdjustedVolume.Qv = qvAmount;
-                        
+                        await _customLogRepository.SaveLog(0, (int)request?.Totals[0].OrderNumber, "GetCouponAdjustedVolumeHook", $"OriginalDiscount {firm2023Coupon.Info.Discount} Adjusted Volume (QV/CV) {result.CouponAdjustedVolume.Qv} / {result.CouponAdjustedVolume.Cv} ", "", "", "", "", "");
                     }
                 }
             }
