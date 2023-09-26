@@ -140,7 +140,8 @@ namespace WebExtension.Repositories
                     where o.distributorid = @AssociateID 
                     and 
                     couponid=@CouponID
-                    and dateused between @StartDate and @EndDate";
+                    and dateused between @StartDate and @EndDate
+                    and Status in ('Paid','Shipped')";
             using (var connection = new SqlConnection(_dataService.GetClientConnectionString().Result))
             {
                 return connection.QueryFirstOrDefault<int>(sql, parameters);
