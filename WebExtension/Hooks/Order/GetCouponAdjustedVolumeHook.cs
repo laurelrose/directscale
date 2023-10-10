@@ -30,11 +30,7 @@ namespace WebExtension.Hooks.Order
                 {
                     if (result.CouponAdjustedVolume.Qv > 0)
                     {
-                        var qvAmount = result.CouponAdjustedVolume.Qv - shareAndSaveCoupon.Info.Discount < 0
-                            ? 0
-                            : result.CouponAdjustedVolume.Qv - shareAndSaveCoupon.Info.Discount;
-
-                        result.CouponAdjustedVolume.Qv = qvAmount;
+                        await _customLogRepository.SaveLog(0, (int)request?.Totals[0].OrderNumber, "GetCouponAdjustedVolumeHook", $"OriginalDiscount {shareAndSaveCoupon.Info.Discount} Adjusted Volume (QV/CV) {result.CouponAdjustedVolume.Qv} / {result.CouponAdjustedVolume.Cv} ", "", "", "", "", "");
                     }
                 }
             }
