@@ -138,6 +138,7 @@ namespace WebExtension
 
                 //Event Handler
                 c.AddEventHandler("DailyEvent", "/api/WebHook/DailyEvent");
+                c.AddEventHandler("CustomRewardsEvent", "/api/WebHook/CustomRewardsEvent");
             });
 
             services.AddControllersWithViews();

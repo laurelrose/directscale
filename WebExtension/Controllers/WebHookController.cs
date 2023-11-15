@@ -1,4 +1,5 @@
-﻿using DirectScale.Disco.Extension.EventModels;
+﻿using Azure.Core;
+using DirectScale.Disco.Extension.EventModels;
 using Microsoft.AspNetCore.Mvc;
 using System;
 using System.Threading.Tasks;
@@ -70,6 +71,31 @@ namespace WebExtension.Controllers
                     {
                         await _customLogService.SaveLog(0, 0, $"{_className}.DailyEvent", "Information", "DailyEvent Triggered", "", "", "", CommonMethod.Serialize(request));
                         await _rewardPointService.AwardRewardPointCreditsAsync();
+                    }
+                }
+
+                return new Responses().OkResult();
+            }
+            catch (Exception ex)
+            {
+                await LogErrorAsync($"{_className}.DailyEvent", ex);
+                return new Responses().ErrorResult(ex);
+            }
+        }
+        [HttpPost]
+        [Route("CustomRewardsEvent")]
+        public async Task<IActionResult> CustomRewardsEvent([FromBody]int PeriodID)
+        {
+            try
+            {
+                using (var @lock = await _distributedLockingService.CreateDistributedLockAsync("LaurelRose_CustomAwardRewardPointCredits"))
+                {
+                    // If the lock is null, that means something else is using it.
+                    // If it's already in use, ignore the request.
+                    if (@lock != null)
+                    {
+                        await _customLogService.SaveLog(0, 0, $"{_className}.DailyEvent", "Information", "CustomRewards Event Triggered", "", "", "", CommonMethod.Serialize(PeriodID));
+                        //await _rewardPointService.AwardRewardPointCreditsAsync();
                     }
                 }
 
