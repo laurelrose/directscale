@@ -137,7 +137,7 @@ namespace WebExtension
                 c.AddHook<FullRefundOrderHook>();
 
                 //Event Handler
-                //c.AddEventHandler("DailyEvent", "/api/WebHook/DailyEvent");
+                c.AddEventHandler("DailyEvent", "/api/WebHook/DailyEvent");
             });
 
             services.AddControllersWithViews();
