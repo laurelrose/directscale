@@ -45,23 +45,23 @@ namespace WebExtension
             services.AddCors();
             services.AddZiplingoEngagement();
             #region FOR LOCAL DEBUGGING USE
-            //
-            //
-            //
+
+
+
             //Remark This section before upload
-            //if (CurrentEnvironment.IsDevelopment())
-            //{
-            //    services.AddSingleton<ITokenProvider>(x => new WebExtensionTokenProvider
-            //    {
-            //        DirectScaleUrl = Configuration["configSetting:BaseURL"].Replace("{clientId}", Configuration["configSetting:Client"]).Replace("{environment}", Configuration["configSetting:Environment"]),
-            //        DirectScaleSecret = Configuration["configSetting:DirectScaleSecret"],
-            //        ExtensionSecrets = new[] { Configuration["configSetting:ExtensionSecrets"] }
-            //    });
-            //}
+            if (CurrentEnvironment.IsDevelopment())
+            {
+                services.AddSingleton<ITokenProvider>(x => new WebExtensionTokenProvider
+                {
+                    DirectScaleUrl = Configuration["configSetting:BaseURL"].Replace("{clientId}", Configuration["configSetting:Client"]).Replace("{environment}", Configuration["configSetting:Environment"]),
+                    DirectScaleSecret = Configuration["configSetting:DirectScaleSecret"],
+                    ExtensionSecrets = new[] { Configuration["configSetting:ExtensionSecrets"] }
+                });
+            }
             //Remark This section before upload
-            //
-            //
-            //
+
+
+
             #endregion
 
             services.Configure<RequestLocalizationOptions>(options =>

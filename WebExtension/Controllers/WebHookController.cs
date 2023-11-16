@@ -88,10 +88,17 @@ namespace WebExtension.Controllers
         public async Task<IActionResult> CustomRewardsEvent([FromBody] int request)
         {
             try
-            {                               
-                await _customLogService.SaveLog(0, 0, $"{_className}.DailyEvent", "Information", "CustomRewards Event Triggered", "", "", "", CommonMethod.Serialize(request));
-                //await _rewardPointService.AwardRewardPointCreditsAsync();
-                    
+            {
+                using (var @lock = await _distributedLockingService.CreateDistributedLockAsync("LaurelRose_AwardRewardPointCredits"))
+                {
+                    // If the lock is null, that means something else is using it.
+                    // If it's already in use, ignore the request.
+                    if (@lock != null)
+                    {
+                        await _customLogService.SaveLog(0, 0, $"{_className}.DailyEvent", "Information", "DailyEvent Triggered", "", "", "", CommonMethod.Serialize(request));
+                        await _rewardPointService.AwardRewardPointCreditsAsync(request);
+                    }
+                }
 
                 return new Responses().OkResult();
             }
