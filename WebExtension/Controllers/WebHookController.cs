@@ -95,7 +95,7 @@ namespace WebExtension.Controllers
                     // If it's already in use, ignore the request.
                     if (@lock != null)
                     {
-                        await _customLogService.SaveLog(0, 0, $"{_className}.DailyEvent", "Information", "DailyEvent Triggered", "", "", "", CommonMethod.Serialize(request));
+                        await _customLogService.SaveLog(0, 0, $"{_className}.CustomEvent", "Information", "Custom Event Triggered", "", "", "", CommonMethod.Serialize(request));
                         await _rewardPointService.AwardRewardPointCreditsAsync(request);
                     }
                 }
@@ -104,7 +104,7 @@ namespace WebExtension.Controllers
             }
             catch (Exception ex)
             {
-                await LogErrorAsync($"{_className}.DailyEvent", ex);
+                await LogErrorAsync($"{_className}.CustomEvent", ex);
                 return new Responses().ErrorResult(ex);
             }
         }
