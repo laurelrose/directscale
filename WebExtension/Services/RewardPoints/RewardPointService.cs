@@ -187,6 +187,7 @@ namespace WebExtension.Services.RewardPoints
                         }
                     }
                 }
+                
 
                 if (TryGetFirstTimeItemCredits(order, awardedOrderItemIds, out var itemCreditMap))
                 {
@@ -288,7 +289,7 @@ namespace WebExtension.Services.RewardPoints
             //
             // Business Requirement: If the given Associate has already placed an order, the First-time Order promotion has already been achieved.
             // An Associate can only achieve a First-time Order once.
-            if ("TRUE".Equals(order.Custom.Field1, StringComparison.OrdinalIgnoreCase) || "1".Equals(order.Custom.Field1, StringComparison.OrdinalIgnoreCase) || _rewardPointRepository.GetFirstTimeOrderPurchaseCount(order.AssociateId) > 1)
+            if ("TRUE".Equals(order.Custom.Field1, StringComparison.OrdinalIgnoreCase) || "1".Equals(order.Custom.Field1, StringComparison.OrdinalIgnoreCase) /* || _rewardPointRepository.GetFirstTimeOrderPurchaseCount(order.AssociateId) > 1*/)
             {
                 orderCreditMap = new Dictionary<int, double>();
                 isFirstTimeOrder = false;
