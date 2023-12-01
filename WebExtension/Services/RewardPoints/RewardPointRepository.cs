@@ -111,7 +111,7 @@ WHERE O.[DistributorID] = @AssociateId
         FROM [dbo].[ORD_CustomFields] C
         WHERE C.[OrderNumber] = O.[recordnumber]
             AND C.[Field1] = 'TRUE'
-    );";
+    ) and Status <> 'Payment Declined';";
 
             using var dbConnection = new SqlConnection(_dataService.GetClientConnectionString().ConfigureAwait(false).GetAwaiter().GetResult());
             return dbConnection.QueryFirstOrDefault<int>(sql, new { AssociateId = orderAssociateId });
