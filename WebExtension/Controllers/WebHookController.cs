@@ -3,6 +3,7 @@ using DirectScale.Disco.Extension;
 using DirectScale.Disco.Extension.EventModels;
 using Microsoft.AspNetCore.Mvc;
 using System;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 using WebExtension.Helper;
 using WebExtension.Services;
@@ -90,7 +91,18 @@ namespace WebExtension.Controllers
             
             try
             {
-                await _rewardPointService.SaveRewardPointCreditsAsync(9728);
+
+                //List<int> orders = new List<int>() {
+                //5697
+
+                //               };
+
+                //foreach (int ordernumber in orders)
+                //{
+                //    await _rewardPointService.SaveRewardPointCreditsAsync(ordernumber);
+                //}
+
+                await _rewardPointService.AwardRewardPointCreditsAsyncCustom();
 
                 return new Responses().OkResult();
             }

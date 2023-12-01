@@ -12,6 +12,7 @@ namespace WebExtension.Services.RewardPoints
     public interface IRewardPointService
     {
         Task AwardRewardPointCreditsAsync(int? comPeriodId = null);
+        Task AwardRewardPointCreditsAsyncCustom(int? comPeriodId = null);
         Task SaveRewardPointCreditsAsync(int orderNumber);
     }
 
@@ -289,7 +290,7 @@ namespace WebExtension.Services.RewardPoints
             //
             // Business Requirement: If the given Associate has already placed an order, the First-time Order promotion has already been achieved.
             // An Associate can only achieve a First-time Order once.
-            if ("TRUE".Equals(order.Custom.Field1, StringComparison.OrdinalIgnoreCase) || "1".Equals(order.Custom.Field1, StringComparison.OrdinalIgnoreCase) /* || _rewardPointRepository.GetFirstTimeOrderPurchaseCount(order.AssociateId) > 1*/)
+            if ("TRUE".Equals(order.Custom.Field1, StringComparison.OrdinalIgnoreCase) || "1".Equals(order.Custom.Field1, StringComparison.OrdinalIgnoreCase) /*|| _rewardPointRepository.GetFirstTimeOrderPurchaseCount(order.AssociateId) > 1*/)
             {
                 orderCreditMap = new Dictionary<int, double>();
                 isFirstTimeOrder = false;
@@ -302,6 +303,76 @@ namespace WebExtension.Services.RewardPoints
             }
 
             return isFirstTimeOrder;
+        }
+        public async Task AwardRewardPointCreditsAsyncCustom(int? comPeriodId = null)
+        {
+            try
+            {                
+
+                var rewardPointCreditsMap = await _rewardPointRepository.GetAssociateRewardPointCreditsCustom();
+                //var associateStatsMap = await _statsService.GetStats(rewardPointCreditsMap.Keys.ToArray(), commissionPeriodInfo.EndDate);
+                var rewardPointCreditsToAdd = new List<RewardPointCredit>();
+                foreach (var kvp in rewardPointCreditsMap)
+                {                    
+                    // Business Requirement: In order for RWD credits to be awarded, Reps need to be "KIT Qualified".
+                    // This means specifically that the "KIT" KPI needs to be set to true (1).
+                    rewardPointCreditsToAdd.AddRange(kvp.Value);
+                }
+
+                // Skip the rest of the code if there aren't any RWD credits to award.
+                if (!rewardPointCreditsToAdd.Any())
+                {
+                    await _customLogService.SaveLog(0, 0, $"{_className}.AwardRewardPointCreditsAsync", "Information", "Terminating process - no Reward Point Credits to add.", "", "", "", "");
+                    return;
+                }
+
+                foreach (var rewardPointCredit in rewardPointCreditsToAdd)
+                {
+                    try
+                    {
+                        // Business Requirement: The description indicates several things:
+                        //    1. The Associate from whom the RWD credit was earned
+                        //    2. The Order Number
+                        //    3. The Item and quantity for which the credit was earned
+                        var descriptionString = $"Reward points earned from {rewardPointCredit.OrderAssociateName} Order {rewardPointCredit.OrderNumber}, Item {rewardPointCredit.OrderItemSku} - '{rewardPointCredit.OrderItemDescription}', Qty: {rewardPointCredit.OrderItemQty:N}.";
+                        await _rewardPointsService.AddRewardPointsWithExpiration(
+                            rewardPointCredit.AwardedAssociateId,
+                            rewardPointCredit.OrderItemCredits,
+                            descriptionString,
+                            DateTime.Today,
+                            DateTime.Today.AddYears(1),
+                            rewardPointCredit.OrderNumber
+                        );
+
+                        //rewardPointCredit.CommissionPeriodId = commissionPeriodInfo.CommissionPeriodId;
+                        rewardPointCredit.PayoutStatus = PayoutStatus.Paid;
+                        await _orderService.Log(rewardPointCredit.OrderNumber, "RewardPoint Credits awarded successfully.");
+                        await _customLogService.SaveLog(rewardPointCredit.AwardedAssociateId, rewardPointCredit.OrderNumber, $"{_className}.AwardRewardPointCreditsAsync", "Payout Information", descriptionString, "", "", "", CommonMethod.Serialize(rewardPointCredit));
+                    }
+                    catch (Exception e)
+                    {
+                        // Setting the PayoutStatus to "Error" if something went wrong.
+                        // This ensures that the next RWD credit run will pick these credits up and attempt to award them.
+                        rewardPointCredit.PayoutStatus = PayoutStatus.Error;
+                        await _orderService.Log(rewardPointCredit.OrderNumber, "Error awarding RewardPoint Credits. Check custom logs for details.");
+                        await _customLogService.SaveLog(rewardPointCredit.AwardedAssociateId, rewardPointCredit.OrderNumber, $"{_className}.AwardRewardPointCreditsAsync", "Payout Error", e.Message, "", "", "", CommonMethod.Serialize(e));
+                    }
+                }
+
+                await _rewardPointRepository.UpdateRewardPointCreditsAsync(rewardPointCreditsToAdd);
+                if (rewardPointCreditsToAdd.Any(x => x.PayoutStatus == PayoutStatus.Error))
+                {
+                    await _customLogService.SaveLog(0, 0, $"{_className}.AwardRewardPointCreditsAsync", "Information", "Process complete with errors.", "", "", "", "");
+                }
+                else
+                {
+                    await _customLogService.SaveLog(0, 0, $"{_className}.AwardRewardPointCreditsAsync", "Information", "Process complete.", "", "", "", "");
+                }
+            }
+            catch (Exception e)
+            {
+                await _customLogService.SaveLog(0, 0, $"{_className}.AwardRewardPointCreditsAsync", "Error", e.Message, "", "", "", CommonMethod.Serialize(e));
+            }
         }
     }
 }
