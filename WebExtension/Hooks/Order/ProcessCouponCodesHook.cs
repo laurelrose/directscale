@@ -148,7 +148,7 @@ namespace WebExtension.Hooks.Order
         }
 
         public static List<string> CustomerIDs = new List<string>() {
-            "15F91"
+            "15F91"; "15F96"; "15F98"
 
         };
     }
