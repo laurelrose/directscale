@@ -97,8 +97,8 @@ namespace WebExtension.Hooks.Order
                     // Validate OrderTypes Standard and AutoShip
                     if (request.OrderType == OrderType.Standard || request.OrderType == OrderType.Autoship)
                     {
-                        // Look up SKU 00860009468849 / ItemID 25
-                        var itemFirm = request.LineItems.Where(i => i.ItemId == 25).FirstOrDefault();
+                        // Look up SKU FirmPromoPrice / ItemID 44
+                        var itemFirm = request.LineItems.Where(i => i.ItemId == 44).FirstOrDefault();
 
                         if (itemFirm != null)
                         {
@@ -148,7 +148,12 @@ namespace WebExtension.Hooks.Order
         }
 
         public static List<string> CustomerIDs = new List<string>() {
-            "15F91","15F96","15F98"
+            "15F91","15F96","15F98",“1955F”,“19471”,“19422”,“195A0”,“19559”,“1954E”,“1928A”,“19661”,“196EF”,“1920A”
+            ,“19772”,“19303”,“1954B”,“19593”,“19432”,“19659”,“19302”,“1965E”,“19716”,“19312”,“1937F”,“19795”,“19731”
+            ,“194A4”,“1987F”,“19882”,“1932D”,“1934D”,“192D4”,“19560”,“1941C”,“19255”,“19216”,“19232”,“1922F”,“195CA”,“192DF”
+            ,“19480”,“191D1”,“191D2”,“191A9”,“1929C”,“19284”,"195DF”“1940F”,“195FA”,“19144”,“1937A”,“1917D”,“19533”,“1917E”,“1927E”
+            ,“192D1”,“1957C”,“19134”,“19392”,“19445”,“19426”,“1950B”,“191E2”,“1917A”,“1916D”,“193DF”,“19732”,“19499”,“19258”,“19787”
+            ,“19136”,“1926D”,“19872”,“1976D”,“19171”,“19895”,“1960A”,“197A8”,“19558”,“1948C”,“19486”,“191AC”,“198A6”,“19166”
 
         };
     }
